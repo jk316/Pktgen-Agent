@@ -1,0 +1,316 @@
+# Pktgen Packet Field Definitions — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/lua.html
+#         https://pktgen.github.io/Pktgen-DPDK/commands.html
+#         https://pktgen.github.io/Pktgen-DPDK/scripts.html
+# Version: 23.06.1
+
+# ── Ethernet Layer Fields ──
+ethernet:
+  eth_dst_addr:
+    name: "Ethernet Destination Address"
+    cli_param: "dst mac"
+    lua_key: "eth_dst_addr"
+    type: "mac_address"
+    formats:
+      - "XX:XX:XX:XX:XX:XX"
+      - "XXXX:XXXX:XXXX"
+    examples:
+      - "00:11:22:33:44:55"
+      - "0011:2233:4455"
+    set_cli: "set <portlist> dst mac <addr>"
+    set_lua: 'pktgen.set_mac(portlist, "dst", addr)'
+    range_cli: "range <portlist> dst mac <SMMI> <etheraddr>"
+    range_lua: "pktgen.range.dst_mac(portlist, SMMI, value)"
+    seq_positional: 3
+    seq_table_key: "eth_dst_addr"
+
+  eth_src_addr:
+    name: "Ethernet Source Address"
+    cli_param: "src mac"
+    lua_key: "eth_src_addr"
+    type: "mac_address"
+    formats:
+      - "XX:XX:XX:XX:XX:XX"
+      - "XXXX:XXXX:XXXX"
+    examples:
+      - "00:11:22:33:44:55"
+      - "0011:2233:4455"
+    set_cli: "set <portlist> src mac <addr>"
+    set_lua: 'pktgen.set_mac(portlist, "src", addr)'
+    range_cli: "range <portlist> src mac <SMMI> <etheraddr>"
+    range_lua: "pktgen.range.src_mac(portlist, SMMI, value)"
+    seq_positional: 4
+    seq_table_key: "eth_src_addr"
+
+  ethType:
+    name: "Ethernet Type"
+    lua_key: "ethType"
+    type: "enum"
+    valid_values:
+      - "ipv4"
+      - "ipv6"
+      - "vlan"
+    set_cli: "set <portlist> type ipv4|ipv6|vlan|arp"
+    set_lua: "pktgen.set_type(portlist, type)"
+    seq_positional: 9
+    seq_table_key: "ethType"
+
+# ── IP Layer Fields ──
+ip:
+  ip_dst_addr:
+    name: "IP Destination Address"
+    cli_param: "dst ip"
+    lua_key: "ip_dst_addr"
+    type: "ip_address"
+    format: "dotted decimal (no CIDR required for dst)"
+    examples:
+      - "10.12.0.1"
+      - "192.168.1.1"
+    set_cli: "set <portlist> dst ip <ipaddr>"
+    set_lua: 'pktgen.set_ipaddr(port, "dst", ipaddr)'
+    range_cli: "range <portlist> dst ip <SMMI> <ipaddr>"
+    range_lua: "pktgen.range.dst_ip(portlist, SMMI, value)"
+    seq_positional: 5
+    seq_table_key: "ip_dst_addr"
+
+  ip_src_addr:
+    name: "IP Source Address"
+    cli_param: "src ip"
+    lua_key: "ip_src_addr"
+    type: "ip_address"
+    format: "dotted decimal WITH CIDR mask"
+    note: "Must include network mask e.g. 10.1.2.3/24. The number after / is the size of the mask value"
+    examples:
+      - "10.12.0.1/16"
+      - "10.10.0.1/16"
+      - "192.168.0.1/24"
+    set_cli: "set <portlist> src ip <ipaddr>"
+    set_lua: 'pktgen.set_ipaddr(port, "src", ipaddr)'
+    range_cli: "range <portlist> src ip <SMMI> <ipaddr>"
+    range_lua: "pktgen.range.src_ip(portlist, SMMI, value)"
+    seq_positional: 6
+    seq_table_key: "ip_src_addr"
+
+  ipProto:
+    name: "IP Protocol"
+    lua_key: "ipProto"
+    type: "enum"
+    valid_values:
+      - "udp"
+      - "tcp"
+      - "icmp"
+    set_cli: "set <portlist> proto udp|tcp|icmp"
+    set_lua: "pktgen.set_proto(portlist, proto)"
+    seq_positional: 10
+    seq_table_key: "ipProto"
+
+  ttl:
+    name: "Time To Live"
+    cli_param: "ttl"
+    type: "integer"
+    set_cli: "set <portlist> ttl <value>"
+    note: "Added TTL support to single and range modes in version 3.7.1"
+
+# ── Transport Layer Fields ──
+transport:
+  sport:
+    name: "Source Port"
+    lua_key: "sport"
+    type: "integer"
+    description: "Standard TCP/UDP port numbers"
+    note: "Accepts decimal or hex (e.g., 0x5678)"
+    examples: [9, 5, 1234, "0x5678"]
+    set_cli: "set <portlist> sport <value>"
+    set_lua: 'pktgen.set(portlist, "sport", value)'
+    range_cli: "range <portlist> src port <SMMI> <value>"
+    range_lua: "pktgen.range.src_port(portlist, SMMI, value)"
+    seq_positional: 7
+    seq_table_key: "sport"
+
+  dport:
+    name: "Destination Port"
+    lua_key: "dport"
+    type: "integer"
+    description: "Standard TCP/UDP port numbers"
+    note: "Accepts decimal or hex (e.g., 0x9988)"
+    examples: [10, 6, 5678, "0x9988"]
+    set_cli: "set <portlist> dport <value>"
+    set_lua: 'pktgen.set(portlist, "dport", value)'
+    range_cli: "range <portlist> dst port <SMMI> <value>"
+    range_lua: "pktgen.range.dst_port(portlist, SMMI, value)"
+    seq_positional: 8
+    seq_table_key: "dport"
+
+  tcp_flags:
+    name: "TCP Flags"
+    lua_key: "tcp_flags"
+    type: "string"
+    description: "Comma-separated list of TCP flags"
+    example: '"fin,ack,cwr"'
+    seq_table_key: "tcp_flags"
+    note: "Added TCP flags/seq/ack support in version 21.10.0"
+
+# ── VLAN Field ──
+vlan:
+  vlanid:
+    name: "VLAN ID"
+    lua_key: "vlanid"
+    type: "integer"
+    valid_range: "1 - 4095"
+    cli_param: "vlan|vlanid"
+    set_cli: "set <portlist> vlan|vlanid <value>"
+    set_lua: "pktgen.vlanid(portlist, id)"
+    range_cli: "range <portlist> vlan <SMMI> <value>"
+    range_lua: "pktgen.range.vlan_id(portlist, SMMI, value)"
+    seq_positional: 11
+    seq_table_key: "vlanid"
+
+# ── Packet Size Field ──
+packet:
+  pktSize:
+    name: "Packet Size"
+    lua_key: "pktSize"
+    type: "integer"
+    valid_range: "64 - 1518"
+    units: "bytes"
+    set_cli: "set <portlist> size <value>"
+    set_lua: 'pktgen.set(portlist, "size", value)'
+    range_cli: "range <portlist> size <SMMI> <value>"
+    range_lua: "pktgen.range.pkt_size(portlist, SMMI, value)"
+    seq_positional: 12
+    seq_table_key: "pktSize"
+
+  burst:
+    name: "Tx Burst Size"
+    cli_param: "txburst"
+    lua_key: "burst"
+    type: "integer"
+    set_cli: "set <portlist> txburst <value>"
+    set_lua: 'pktgen.set(portlist, "burst", value)'
+
+  rxburst:
+    name: "Rx Burst Size"
+    cli_param: "rxburst"
+    type: "integer"
+    set_cli: "set <portlist> rxburst <value>"
+
+# ── GTP Tunnel Fields ──
+gtp:
+  teid:
+    name: "Tunnel Endpoint Identifier"
+    lua_key: "teid"
+    type: "integer"
+    description: "GTPu TEID value"
+    cli_param: "teid"
+    range_cli: "range <portlist> teid <SMMI> <value>"
+    seq_positional: 13
+    seq_table_key: "teid"
+    optional: true
+
+# ── QoS Fields ──
+qos:
+  cos:
+    name: "Class of Service"
+    lua_key: "cos"
+    type: "integer"
+    set_cli: "set <portlist> cos <value>"
+    range_cli: "range <portlist> cos <SMMI> <value>"
+    seq_table_key: "cos"
+
+  tos:
+    name: "Type of Service"
+    lua_key: "tos"
+    type: "integer"
+    set_cli: "set <portlist> tos <value>"
+    range_cli: "range <portlist> tos <SMMI> <value>"
+    seq_table_key: "tos"
+
+# ── VxLAN Fields ──
+vxlan:
+  flags:
+    name: "VxLAN Flags"
+    type: "integer"
+    set_cli: "set <portlist> vxlan <flags> <group id> <vxlan_id>"
+  group_id:
+    name: "VxLAN Group ID"
+    type: "integer"
+    lua_key: "gid"
+  vxlan_id:
+    name: "VxLAN ID"
+    type: "integer"
+    lua_key: "vid"
+  note: "VxLAN support added in version 3.6.0"
+
+# ── MPLS Field ──
+mpls:
+  entry:
+    name: "MPLS Entry"
+    type: "hex"
+    range_cli: "range <portlist> mpls entry <hex-value>"
+
+# ── Q-in-Q Fields ──
+qinq:
+  id1:
+    name: "Q-in-Q Outer VLAN ID"
+    type: "integer"
+    set_cli: "set <portlist> qinqids <id1> <id2>"
+    range_cli: "range <portlist> qinq index <val1> <val2>"
+
+  id2:
+    name: "Q-in-Q Inner VLAN ID"
+    type: "integer"
+    set_cli: "set <portlist> qinqids <id1> <id2>"
+    range_cli: "range <portlist> qinq index <val1> <val2>"
+
+# ── GRE Field ──
+gre:
+  key:
+    name: "GRE Key"
+    type: "integer"
+    range_cli: "range <portlist> gre key <value>"
+
+# ── Pattern Fill Field ──
+pattern:
+  name: "Fill Pattern Type"
+  cli_param: "pattern"
+  type: "enum"
+  valid_values:
+    - { value: "abc", description: "Default pattern of abc string" }
+    - { value: "none", description: "No fill pattern, maybe random data" }
+    - { value: "zero", description: "Fill of zero bytes" }
+    - { value: "user", description: "User supplied string of max 16 bytes" }
+  user_pattern_max_length: 16
+  set_cli: "set <portlist> pattern <type>"
+
+# ── Sequence Table Keys Summary ──
+sequence_table_keys:
+  required:
+    - eth_dst_addr
+    - eth_src_addr
+    - ip_dst_addr
+    - ip_src_addr
+    - sport
+    - dport
+    - ethType
+    - ipProto
+    - vlanid
+    - pktSize
+  optional:
+    - teid
+    - cos
+    - tos
+    - tcp_flags
+
+# ── SMMI Properties (used by Range commands) ──
+SMMI_properties: ["start", "min", "max", "inc"]
+
+# ── Random Bit Mask Specification ──
+random_mask:
+  description: "32-bit mask string for random bitfields"
+  characters:
+    - { char: "0", meaning: "bit will be 0" }
+    - { char: "1", meaning: "bit will be 1" }
+    - { char: ".", meaning: "bit will be ignored (original value is retained)" }
+    - { char: "X", meaning: "bit will get random value" }
+  index_slots: 32  # 0-31 random mask index slots per port
+  example: '"XX111000.. ..xx11"'

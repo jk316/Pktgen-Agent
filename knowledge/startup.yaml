@@ -1,0 +1,222 @@
+# Pktgen Startup Parameters — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/usage_eal.html
+#         https://pktgen.github.io/Pktgen-DPDK/usage_pktgen.html
+#         https://pktgen.github.io/Pktgen-DPDK/getting_started.html
+#         https://pktgen.github.io/Pktgen-DPDK/running.html
+# Version: 23.06.1
+
+# ── Command Structure ──
+command_structure:
+  description: "Pktgen splits arguments at '--': EAL options first, then Pktgen options"
+  syntax: "./app/app/$(target)/pktgen [EAL options] -- [Pktgen options]"
+  example: 'pktgen -l 0-4 -n 3 -- -P -m "[1:3].0, [2:4].1"'
+
+# ── EAL Options ──
+eal_options:
+  general:
+    - { option: "-c COREMASK", description: "A hexadecimal bitmask of cores to run on", required: true, type: "hex" }
+    - { option: "-n NUM", description: "Number of memory channels", required: true, type: "integer" }
+    - { option: "-l CORELIST", description: "List of cores to run on (alternative to -c)", type: "corelist", example: "0-4" }
+    - { option: "-v", description: "Display version information on startup", type: "flag" }
+    - { option: "-d LIB.so", description: "Load a driver (can be repeated multiple times)", type: "path" }
+    - { option: "-m MB", description: "Memory to allocate (see also --socket-mem)", type: "integer" }
+    - { option: "-r NUM", description: "Force number of memory ranks (don't detect)", type: "integer" }
+    - { option: "--xen-dom0", description: "Support application running on Xen Domain0 without hugetlbfs", type: "flag" }
+    - { option: "--syslog", description: "Set syslog facility", type: "string" }
+    - { option: "--socket-mem", description: "Memory to allocate on specific sockets (use comma separated values)", type: "string", example: "256,256" }
+    - { option: "--huge-dir", description: "Directory where hugetlbfs is mounted", type: "path" }
+    - { option: "--proc-type", description: "Type of this process", type: "enum", valid_values: ["primary", "secondary", "auto"] }
+    - { option: "--file-prefix", description: "Prefix for hugepage filenames", type: "string", example: "pg" }
+    - { option: "--pci-blocklist", alias: "-b", description: "Add a PCI device in block list. Format: <domain:bus:devid.func>", type: "pci", note: "Prevent EAL from using this PCI device. Can appear multiple times." }
+    - { option: "--pci-allowlist", alias: "-w", description: "Allow-list a PCI device. Format: <[domain:]bus:devid.func>", type: "pci", note: "Only use the specified PCI devices. Can appear multiple times. CANNOT be used with -b option" }
+    - { option: "--vdev", description: "Add a virtual device. Format: <driver><id>[,key=val,...]", type: "string", example: "--vdev=eth_pcap0,iface=eth2" }
+    - { option: "--vmware-tsc-map", description: "Use VMware TSC map instead of native RDTSC", type: "flag" }
+    - { option: "--base-virtaddr", description: "Specify base virtual address", type: "address" }
+    - { option: "--vfio-intr", description: "Specify desired interrupt mode for VFIO", type: "enum", valid_values: ["legacy", "msi", "msix"] }
+    - { option: "--create-uio-dev", description: "Create /dev/uioX (usually done by hotplug)", type: "flag" }
+
+  debug:
+    - { option: "--no-huge", description: "Use malloc instead of hugetlbfs", type: "flag" }
+    - { option: "--no-pci", description: "Disable pci", type: "flag" }
+    - { option: "--no-hpet", description: "Disable hpet", type: "flag" }
+    - { option: "--no-shconf", description: "No shared config (mmap'd files)", type: "flag" }
+
+  core_requirements:
+    minimum_lcores: 2
+    lcore_0_role: "CLI, timers, display"
+    lcore_1_plus_role: "Packet RX and TX"
+    note: "The application will use the first lcore in the coremask bitmap. You are not required to start at physical lcore 0."
+
+# ── Pktgen Application Options ──
+pktgen_options:
+  - { option: "-h", description: "Display help information", type: "flag" }
+
+  - { option: "-I", description: "Use CLI", type: "flag" }
+
+  - { option: "-s P:file", description: "PCAP packet stream file, 'P' is the port number", type: "string", example: "-s 0:test.pcap" }
+
+  - { option: "-f filename", description: "Command file (.pkt) or Lua script (.lua) file to execute on startup", type: "path", note: "See Running Script Files" }
+
+  - { option: "-l filename", description: "Write log output to filename", type: "path" }
+
+  - { option: "-P", description: "Enable PROMISCUOUS mode on all ports", type: "flag" }
+
+  - { option: "-G", description: "Enable socket support using default server values localhost:0x5606", type: "flag", note: "See Socket Support for Pktgen" }
+
+  - { option: "-g address", description: "Same as -G but with an optional IP address and port number. Default: localhost:0x5606", type: "string", note: "If -g is used that enables socket support as a server application" }
+
+  - { option: "-T", description: "Enable color terminal output in VT100", type: "flag" }
+
+  - { option: "-N", description: "Enable NUMA support", type: "flag" }
+
+  - { option: "-m <string>", description: "Matrix for mapping ports to logical cores", type: "matrix", note: "See port-to-core mapping BNF grammar" }
+
+# ── Port-to-Core Mapping (-m option) ──
+port_core_mapping:
+  description: "Matrix for mapping ports to logical cores. Grouping can use {} instead of [] if required."
+  bnf_grammar: |
+    <matrix-string>   := """ <lcore-port> { "," <lcore-port>} """
+    <lcore-port>      := <lcore-list> "." <port-list>
+    <lcore-list>      := "[" <rx-list> ":" <tx-list> "]"
+    <port-list>       := "[" <rx-list> ":" <tx-list>"]"
+    <rx-list>         := <num> { "/" (<num> | <list>) }
+    <tx-list>         := <num> { "/" (<num> | <list>) }
+    <list>            := <num> { "/" (<range> | <list>) }
+    <range>           := <num> "-" <num> { "/" <range> }
+    <num>             := <digit>+
+    <digit>           := 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+  note: "BTW: you can use \"{}\" instead of \"[]\" as it does not matter to the syntax."
+
+  examples:
+    - { syntax: "1.0, 2.1, 3.2", meaning: "Core 1 → port 0 rx/tx; Core 2 → port 1 rx/tx; Core 3 → port 2 rx/tx" }
+    - { syntax: "1.[0-2], 2.3", meaning: "Core 1 → ports 0,1,2 rx/tx; Core 2 → port 3 rx/tx" }
+    - { syntax: "[0-1].0, [2/4-5].1", meaning: "Cores 0-1 → port 0 rx/tx; Cores 2,4,5 → port 1 rx/tx" }
+    - { syntax: "[1:2].0, [4:6].1", meaning: "Core 1 → port 0 rx; Core 2 → port 0 tx" }
+    - { syntax: "[1:2].[0-1], [4:6].[2/3]", meaning: "Core 1 → ports 0&1 rx; Core 2 → ports 0&1 tx" }
+    - { syntax: "[1:2-3].0, [4:5-6].1", meaning: "Core 1 → port 0 rx; Cores 2,3 → port 0 tx; Core 4 → port 1 rx; Cores 5,6 → port 1 tx" }
+    - { syntax: "[1-2:3].0, [4-5:6].1", meaning: "Cores 1,2 → port 0 rx; Core 3 → port 0 tx; Cores 4,5 → port 1 rx; Core 6 → port 1 tx" }
+    - { syntax: "[1-2:3-5].0, [4-5:6/8].1", meaning: "Cores 1,2 → port 0 rx; Cores 3,4,5 → port 0 tx; Cores 4,5 → port 1 rx; Cores 6,8 → port 1 tx" }
+    - { syntax: "[1:2].[0:0-7], [3:4].[1:0-7]", meaning: "Core 1 → port 0 rx; Core 2 → ports 0-7 tx; Core 3 → port 1 rx; Core 4 → ports 0-7 tx" }
+
+# ── run.py Configuration Format ──
+run_py_config:
+  description: "Python-based configuration for setting up and running pktgen"
+  location: "<PktgenInstallDir>/tools/run.py"
+  config_path: "<PktgenInstallDir>/cfg/default.cfg"
+  setup_command: "./run.py -s default"
+  run_command: "./run.py default"
+  note: "The run.py script will do the sudo to root internally, which means sudo is not required"
+
+  default_cfg_structure:
+    setup_section:
+      devices: "List of PCI address groups (one group per line)"
+      opts: "List of setup options (e.g., '-b igb_uio')"
+
+    run_section:
+      dpdk: "List of DPDK EAL options"
+      blocklist: "List of PCI addresses to block"
+      pktgen: "List of Pktgen-specific options (-T, -P, -m, etc.)"
+      misc: "List of miscellaneous options (e.g., theme file)"
+
+  default_cfg_example: |
+    setup = {
+      'devices': [
+          '81:00.0 81:00.1 81:00.2 81:00.3',
+          '85:00.0 85:00.1 85:00.2 85:00.3',
+          '83:00.0'
+      ],
+      'opts': ['-b igb_uio']
+    }
+
+    run = {
+      'dpdk': [
+          '-l 1,1-5,10-13',
+          '-n 4',
+          '--proc-type auto',
+          '--log-level 7',
+          '--socket-mem 2048,2048',
+          '--file-prefix pg'
+      ],
+      'blocklist': [
+          '-b 81:00.0 -b 81:00.1',
+          '-b 85:00.0 -b 85:00.1',
+          '-b 83:00.0'
+      ],
+      'pktgen': [
+          '-T',
+          '-P',
+          '-m [2:3].0',
+          '-m [4:5].1',
+          '-m [10:11].2',
+          '-m [12:13].3',
+      ],
+      'misc': [
+          '-f themes/black-yellow.theme'
+      ]
+    }
+
+# ── Multiple Instances ──
+multiple_instances:
+  description: "Multiple Pktgen instances can run concurrently by blocklisting different ports per instance and using different --file-prefix values"
+  key_considerations:
+    - "Each instance needs 8+1 lcores — the extra lcore is for display and timers"
+    - "Pktgen needs the first lcore for display and timers"
+    - "Each instance blocklists the ports it will NOT use"
+    - "Use --file-prefix to avoid hugepage conflicts (e.g., pg1, pg2)"
+    - "Each instance gets --socket-mem allocation"
+  example_instance_1: |
+    ./app/app/${target}/pktgen -l 2-11 -n 3 --proc-type auto \
+               --socket-mem 512,512 --file-prefix pg1 \
+               -b 09:00.0 -b 09:00.1 -b 83:00.1 -b 06:00.0 \
+               -b 06:00.1 -b 08:00.0 -b 08:00.1 -- \
+               -T -P -m "[4:6].0, [5:7].1, [8:10].2, [9:11].3" \
+               -f themes/black-yellow.theme
+  example_instance_2: |
+    ./app/app/${target}/pktgen -l 2,4-11 -n 3 --proc-type auto \
+               --socket-mem 512,512 --file-prefix pg2 \
+               -b 09:00.0 -b 09:00.1 -b 83:00.1 -b 87:00.0 \
+               -b 87:00.1 -b 89:00.0 -b 89:00.1 -- \
+               -T -P -m "[12:16].0, [13:17].1, [14:18].2, [15:19].3" \
+               -f themes/black-yellow.theme
+
+# ── Hugepage Setup ──
+hugepage_setup:
+  kernel_minimum: "2.6.33"
+  required_configs:
+    - "CONFIG_HUGETLBFS=y"
+    - "CONFIG_HUGETLB_PAGE=y"
+  sysctl: "vm.nr_hugepages=256"
+  fstab: "huge /mnt/huge hugetlbfs defaults 0 0"
+  verification: "grep -i huge /proc/meminfo"
+  warning: "If you start an application that makes extensive use of hugepages (Eclipse, WR Workbench) before starting pktgen after reboot, pktgen may fail to load."
+
+# ── Build Instructions ──
+build:
+  dpdk:
+    env_vars:
+      - "export RTE_SDK=<DPDKInstallDir>"
+      - "export RTE_TARGET=x86_64-native-linux-gcc"
+    alternate_targets:
+      - "x86_64-native-linuxapp-gcc"
+      - "x86_64-native-linux-clang"
+      - "x86_64-native-linuxapp-clang"
+    commands:
+      - "cd $RTE_SDK"
+      - "make install T=x86_64-native-linux-gcc"
+  pktgen:
+    commands:
+      - "cd <PktgenInstallDir>"
+      - "make"
+  dependencies:
+    - "linux-headers-<kernel-version>-generic"
+    - "libpcap-dev (optional, for pcap driver)"
+
+# ── Terminal Requirements ──
+terminal:
+  columns: 132
+  rows: 42
+  protocol: "VT100"
+  note: "More than 4-6 ports requires wider display"
+  color_note: "It is best to set your terminal background to black when working with the default pktgen color scheme."
+  incompatible: "Hyperterminal on Windows is not compatible (VT100 required)"

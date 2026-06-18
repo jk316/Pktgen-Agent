@@ -1,0 +1,92 @@
+# Pktgen PCAP Support — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/commands.html
+#         https://pktgen.github.io/Pktgen-DPDK/lua.html
+#         https://pktgen.github.io/Pktgen-DPDK/usage_pktgen.html
+# Version: 23.06.1
+
+# ── Overview ──
+overview:
+  description: "Pktgen supports sending and capturing PCAP packet files. PCAP files can be streamed on specific ports at startup or loaded at runtime. Captured packets are saved to the current working directory."
+  startup_option: "-s P:PCAP_file"
+  startup_note: "'P' is the port number for the PCAP file"
+
+# ── CLI Commands ──
+cli_commands:
+  - syntax: "pcap show"
+    description: "Show PCAP information"
+
+  - syntax: "pcap index"
+    description: "Move the PCAP file index to the given packet number"
+    parameters:
+      - { value: "0", description: "rewind to beginning" }
+      - { value: "-1", description: "end of file" }
+
+  - syntax: "pcap filter <portlist> <string>"
+    description: "PCAP filter string to filter packets on receive"
+    parameters:
+      - { name: "portlist", type: "portlist" }
+      - { name: "string", type: "string", description: "PCAP filter expression" }
+
+# ── Enable/Disable PCAP ──
+enable_disable:
+  send_cli: "enable|disable <portlist> pcap"
+  send_description: "Enable or Disable sending pcap packets on a portlist"
+  send_lua: 'pktgen.pcap(portlist, "on"/"off")'
+
+  capture_cli: "enable|disable <portlist> capture"
+  capture_description: "Enable/disable packet capturing on a portlist"
+  capture_note: "Disable capture on a port to save data into current working directory"
+
+# ── PCAP Page Navigation ──
+page_navigation:
+  - page: "page pcap"
+    description: "Display the pcap page"
+  - page: "page next"
+    description: "Display next page of PCAP packets"
+
+# ── Startup Option ──
+startup:
+  option: "-s P:file"
+  description: "PCAP packet stream file, 'P' is the port number"
+  example: "-s 0:capture.pcap"
+  note: "See Pktgen Commandline Options for full details"
+
+# ── PCAP Port Flag ──
+port_flag:
+  flag: "p"
+  name: "PCAP"
+  description: "PCAP enabled flag"
+
+# ── Line Rate Display ──
+display:
+  description: "Per port rate line"
+  pcapt_column: "Pcapt"
+  values: "Pkt/s and MBits/s counts"
+
+# ── Lua API ──
+lua_api:
+  function: "pktgen.pcap"
+  signature: 'pktgen.pcap(portlist, state)'
+  parameters:
+    - { name: "portlist", type: "string" }
+    - { name: "state", type: "string", valid_values: ["on", "off"] }
+  example: 'pktgen.pcap("all", "on");'
+
+# ── API Changes ──
+api_changes:
+  - version: "22.07.0"
+    change: "Added restart command to clean up DPDK PMD or mbufs and restart RX/TX"
+  - version: "21.10.0"
+    change: "PCAP files changed to rw-rw-rw mode; PCAP capture now uses correct NUMA node; PCAP uses max packet size for mempool, multiple of pcap length"
+  - version: "21.02.0"
+    change: "Fixed pcap memory allocation issues on wrong socket"
+  - version: "3.6.3"
+    change: "Added support for different PCAP file per queue of a port"
+  - version: "3.6.3"
+    change: "Replaced constant with macro for PCAP buffer size"
+  - version: "19.10.0"
+    change: "Fixed pcap files not being sent with small packet counts"
+  - version: "3.0.09"
+    change: "Fixed PCAP corruption"
+  - version: "2.9.17"
+    change: "Fixed PCAP crash when using multiple tx queues"

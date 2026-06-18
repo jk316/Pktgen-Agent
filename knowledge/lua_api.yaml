@@ -1,0 +1,554 @@
+# Pktgen Lua API — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/lua.html
+#         https://pktgen.github.io/Pktgen-DPDK/scripts.html
+# Version: 23.06.1
+
+# ── Lua Environment Setup ──
+environment:
+  package_path:
+    setup: 'package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"'
+    required_module: "Pktgen"
+    require_statement: 'require "Pktgen"'
+  comment_style: "-- to end of line"
+  lua_version: "Lua 5.3"
+  note: "Lua is embedded in pktgen to script and configure the application and also to plug into DPDK functions"
+
+# ── Utility Functions (provided by pktgen Lua environment) ──
+utility_functions:
+  - name: "printf"
+    signature: "printf(format, ...)"
+    description: "Formatted print to pktgen console"
+    example: 'printf("Lua Version      : %s\n", pktgen.info.Lua_Version);'
+
+  - name: "prints"
+    signature: "prints(label, table)"
+    description: "Print a labeled table dump to console"
+    example: 'prints("pktgen.info", pktgen.info);'
+
+# ── pktgen.info Namespace ──
+info_api:
+  - field: "pktgen.info.Lua_Version"
+    type: "string"
+    description: "Lua version string"
+    example_value: '"Lua 5.3"'
+
+  - field: "pktgen.info.Pktgen_Version"
+    type: "string"
+    description: "Pktgen version string"
+    example_value: '"2.9.0"'
+
+  - field: "pktgen.info.Pktgen_Copyright"
+    type: "string"
+    description: "Copyright string"
+    example_value: '"Copyright(c) <2010-2024>, Intel Corp."'
+
+  - field: "pktgen.info.Pktgen_Authors"
+    type: "string"
+    description: "Authors string"
+    example_value: '"Keith Wiles @ Wind River Systems"'
+
+# ── Status/Query Functions ──
+status_query_api:
+  - name: "pktgen.linkState"
+    signature: "pktgen.linkState(portlist)"
+    parameters:
+      - { name: "portlist", type: "string", description: 'port list or "all"' }
+    returns: "table of link states per port"
+    example: 'prints("linkState", pktgen.linkState("all"));'
+
+  - name: "pktgen.isSending"
+    signature: "pktgen.isSending(portlist)"
+    parameters:
+      - { name: "portlist", type: "string", description: 'port list or "all"' }
+    returns: "table of boolean sending states per port"
+    example: 'prints("isSending", pktgen.isSending("all"));'
+
+  - name: "pktgen.portSizes"
+    signature: "pktgen.portSizes(portlist)"
+    parameters:
+      - { name: "portlist", type: "string", description: 'port list or "all"' }
+    returns: "table of packet sizes per port"
+    example: 'prints("portSizes", pktgen.portSizes("all"));'
+
+  - name: "pktgen.pktStats"
+    signature: "pktgen.pktStats(portlist)"
+    parameters:
+      - { name: "portlist", type: "string", description: 'port list or "all"' }
+    returns: "table of packet statistics per port"
+    example: 'prints("pktStats", pktgen.pktStats("all"));'
+
+  - name: "pktgen.portStats"
+    signature: "pktgen.portStats(portlist, type)"
+    parameters:
+      - { name: "portlist", type: "string", description: 'port string, e.g. "2" or "all"' }
+      - { name: "type", type: "string", valid_values: ["rate", "port"], description: 'type of stats to query' }
+    returns: "table of port statistics"
+    examples:
+      - 'prints("portRates", pktgen.portStats("all", "rate"));'
+      - 'prints("portStats", pktgen.portStats("2", "port"));'
+
+  - name: "pktgen.portCount"
+    signature: "pktgen.portCount()"
+    returns: "integer"
+    description: "Number of ports used by Pktgen"
+    example: 'printf("Port Count %d\n", pktgen.portCount());'
+
+  - name: "pktgen.totalPorts"
+    signature: "pktgen.totalPorts()"
+    returns: "integer"
+    description: "Total number of ports seen by DPDK"
+    example: 'printf("Total port Count %d\n", pktgen.totalPorts());'
+
+  - name: "pktgen.portInfo"
+    signature: "pktgen.portInfo()"
+    returns: "table"
+    description: "Returns most port info in one structure"
+    note: "Added in version 3.6.6"
+
+# ── Configuration Functions ──
+configuration_api:
+  - name: "pktgen.set"
+    signature: "pktgen.set(portlist, key, value)"
+    parameters:
+      - { name: "portlist", type: "string", description: 'port list or "all"' }
+      - { name: "key", type: "string", description: "configuration parameter name" }
+      - { name: "value", type: "varies", description: "value for the parameter" }
+    description: "Set per-port configuration values"
+    cli_equivalent: "set <portlist> <key> <value>"
+    recognized_keys:
+      - { key: "count", type: "integer", description: "Number of packets to transmit" }
+      - { key: "rate", type: "float", description: "Packet rate in percentage" }
+      - { key: "size", type: "integer", description: "Packet size to transmit", valid_range: "64 - 1518" }
+      - { key: "burst", type: "integer", description: "Number of packets in a burst" }
+      - { key: "sport", type: "integer", description: "Source port number", note: "accepts hex e.g. 0x5678" }
+      - { key: "dport", type: "integer", description: "Destination port number", note: "accepts hex e.g. 0x9988" }
+      - { key: "prime", type: "integer", description: "Number of packets to send on prime" }
+      - { key: "seq_cnt", type: "integer", description: "Sequence count", valid_range: "0 - 16", aliases: ["seqcnt", "seqCnt"] }
+    examples:
+      - 'pktgen.set("all", "count", 100);'
+      - 'pktgen.set("all", "rate", 50);'
+      - 'pktgen.set("all", "size", 256);'
+      - 'pktgen.set("all", "burst", 128);'
+      - 'pktgen.set("all", "sport", 0x5678);'
+      - 'pktgen.set("all", "dport", 0x9988);'
+      - 'pktgen.set("all", "prime", 3);'
+      - 'pktgen.set("all", "seq_cnt", 3);'
+
+  - name: "pktgen.vlanid"
+    signature: "pktgen.vlanid(portlist, id)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "id", type: "integer", valid_range: "1 - 4095" }
+    description: "Set VLAN ID for portlist"
+    example: 'pktgen.vlanid("all", 55);'
+
+  - name: "pktgen.set_mac"
+    signature: "pktgen.set_mac(portlist, direction, mac_addr)"
+    parameters:
+      - { name: "portlist", type: "string", example: '"0-2"' }
+      - { name: "direction", type: "string", valid_values: ["src", "dst"] }
+      - { name: "mac_addr", type: "string", description: "MAC address string", example: '"0001:1122:3344"' }
+    description: "Set source or destination MAC address"
+    note: "Changed to 3 args in version 19.08.0"
+
+  - name: "pktgen.set_ipaddr"
+    signature: "pktgen.set_ipaddr(port, direction, ipaddr)"
+    parameters:
+      - { name: "port", type: "string", description: "port number as string" }
+      - { name: "direction", type: "string", valid_values: ["src", "dst"] }
+      - { name: "ipaddr", type: "string", description: 'IP address; src must include CIDR mask e.g. "10.10.1.2/24"' }
+    description: "Set source or destination IP address"
+    examples:
+      - 'pktgen.set_ipaddr("0", "dst", "10.10.2.2");'
+      - 'pktgen.set_ipaddr("0", "src", "10.10.1.2/24");'
+      - 'pktgen.set_ipaddr("1", "dst", "10.10.2.2");'
+      - 'pktgen.set_ipaddr("1", "src", "10.10.2.2/24");'
+
+  - name: "pktgen.set_proto"
+    signature: "pktgen.set_proto(portlist, proto)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "proto", type: "string", valid_values: ["udp", "tcp", "icmp"] }
+    description: "Set the packet protocol"
+    example: 'pktgen.set_proto("all", "udp");'
+
+  - name: "pktgen.set_type"
+    signature: "pktgen.set_type(portlist, type)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "type", type: "string", valid_values: ["ipv4", "ipv6", "vlan", "arp"] }
+    description: "Set the packet type"
+    example: 'pktgen.set_type("all", "ipv6");'
+
+  - name: "pktgen.mac_from_arp"
+    signature: "pktgen.mac_from_arp(state)"
+    parameters:
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Enable/disable MAC address learning from ARP"
+    example: 'pktgen.mac_from_arp("on");'
+
+  - name: "pktgen.ports_per_page"
+    signature: "pktgen.ports_per_page(n)"
+    parameters:
+      - { name: "n", type: "integer", valid_range: "1 - 6" }
+    description: "Set number of ports displayed per page"
+    examples:
+      - 'pktgen.ports_per_page(2);'
+      - 'pktgen.ports_per_page(4);'
+
+# ── Sequence Functions ──
+sequence_api:
+  - name: "pktgen.seq"
+    signature: "pktgen.seq(seq#, portlist, eth_dst, eth_src, ip_dst, ip_src, sport, dport, ethType, ipProto, vlanid, pktSize)"
+    description: "Set a sequence packet entry (12 positional parameters)"
+    cli_equivalent: "seq <seq#> <portlist> dst-Mac src-Mac dst-IP src-IP sport dport ipv4|ipv6 udp|tcp|icmp vlanid pktsize"
+    parameters:
+      - { position: 1, name: "seq#", type: "integer", description: "Sequence number" }
+      - { position: 2, name: "portlist", type: "string" }
+      - { position: 3, name: "eth_dst_addr", type: "string", description: "Destination MAC" }
+      - { position: 4, name: "eth_src_addr", type: "string", description: "Source MAC" }
+      - { position: 5, name: "ip_dst_addr", type: "string", description: "Destination IP" }
+      - { position: 6, name: "ip_src_addr", type: "string", description: "Source IP with CIDR mask e.g. 10.10.0.1/16" }
+      - { position: 7, name: "sport", type: "integer", description: "Source port" }
+      - { position: 8, name: "dport", type: "integer", description: "Destination port" }
+      - { position: 9, name: "ethType", type: "string", valid_values: ["ipv4", "ipv6", "vlan"] }
+      - { position: 10, name: "ipProto", type: "string", valid_values: ["udp", "tcp", "icmp"] }
+      - { position: 11, name: "vlanid", type: "integer", valid_range: "1 - 4095" }
+      - { position: 12, name: "pktSize", type: "integer", valid_range: "64 - 1518" }
+    example: 'pktgen.seq(0, "all", "0000:4455:6677", "0000:1234:5678", "10.11.0.1", "10.10.0.1/16", 5, 6, "ipv4", "udp", 1, 128);'
+
+  - name: "pktgen.seqTable"
+    signature: "pktgen.seqTable(seq#, portlist, table)"
+    description: "Set a sequence packet entry from a Lua table (entries can be in any order)"
+    cli_equivalent: "seq command (all fields)"
+    parameters:
+      - { name: "seq#", type: "integer", description: "Sequence number" }
+      - { name: "portlist", type: "string" }
+      - { name: "table", type: "table", description: "Lua table with packet field keys" }
+    table_keys:
+      - { key: "eth_dst_addr", type: "string", description: "Ethernet destination address", example: '"0011:4455:6677"' }
+      - { key: "eth_src_addr", type: "string", description: "Ethernet source address", example: '"0011:1234:5678"' }
+      - { key: "ip_dst_addr", type: "string", description: "IP destination address", example: '"10.12.0.1"' }
+      - { key: "ip_src_addr", type: "string", description: "IP source address with CIDR mask. 16 is the size of the mask value", example: '"10.12.0.1/16"' }
+      - { key: "sport", type: "integer", description: "Source port (Standard port numbers)", example: "9" }
+      - { key: "dport", type: "integer", description: "Destination port (Standard port numbers)", example: "10" }
+      - { key: "ethType", type: "string", valid_values: ["ipv4", "ipv6", "vlan"], example: '"ipv4"' }
+      - { key: "ipProto", type: "string", valid_values: ["udp", "tcp", "icmp"], example: '"udp"' }
+      - { key: "vlanid", type: "integer", valid_range: "1 - 4095", example: "1" }
+      - { key: "pktSize", type: "integer", valid_range: "64 - 1518", example: "128" }
+      - { key: "teid", type: "integer", description: "TEID (Tunnel Endpoint Identifier)", example: "3" }
+      - { key: "cos", type: "integer", description: "Class of Service", example: "5" }
+      - { key: "tos", type: "integer", description: "Type of Service", example: "6" }
+      - { key: "tcp_flags", type: "string", description: "TCP flags as comma-separated string", example: '"fin,ack,cwr"' }
+    example: |
+      local seq_table = {
+          ["eth_dst_addr"] = "0011:4455:6677",
+          ["eth_src_addr"] = "0011:1234:5678",
+          ["ip_dst_addr"] = "10.12.0.1",
+          ["ip_src_addr"] = "10.12.0.1/16",
+          ["sport"] = 9,
+          ["dport"] = 10,
+          ["ethType"] = "ipv4",
+          ["ipProto"] = "udp",
+          ["vlanid"] = 1,
+          ["pktSize"] = 128,
+          ["teid"] = 3,
+          ["cos"] = 5,
+          ["tos"] = 6,
+          ["tcp_flags"] = "fin,ack,cwr"
+      };
+      pktgen.seqTable(0, "all", seq_table);
+
+  - name: "pktgen.rnd"
+    signature: "pktgen.rnd(portlist, idx, off, mask)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "idx", type: "integer", description: "random mask index slot" }
+      - { name: "off", type: "integer", description: "offset in bytes" }
+      - { name: "mask", type: "string", description: "32-bit mask pattern. 0=0 bit, 1=1 bit, .=ignore, X=random" }
+    description: "Set random bit mask for transmitted packets"
+    example: 'pktgen.rnd("all", 1, 20, "XX111000.. ..xx11");'
+
+# ── Range Functions ──
+range_api:
+  namespace: "pktgen.range"
+  note: "Range functions use SMMI properties: start, min, max, inc"
+  cli_equivalent: "range <portlist> <field> <SMMI> <value>"
+
+  functions:
+    - name: "pktgen.range.dst_mac"
+      signature: "pktgen.range.dst_mac(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "string", description: "MAC address" }
+      example: 'pktgen.range.dst_mac("all", "start", "0011:2233:4455");'
+
+    - name: "pktgen.range.src_mac"
+      signature: "pktgen.range.src_mac(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "string", description: "MAC address" }
+      example: 'pktgen.range.src_mac("all", "start", "0033:2233:4455");'
+
+    - name: "pktgen.range.dst_ip"
+      signature: "pktgen.range.dst_ip(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "string", description: "IP address" }
+      examples:
+        - 'pktgen.range.dst_ip("all", "start", "10.12.0.1");'
+        - 'pktgen.range.dst_ip("all", "inc", "0.0.0.2");'
+        - 'pktgen.range.dst_ip("all", "min", "10.12.0.1");'
+        - 'pktgen.range.dst_ip("all", "max", "10.12.0.64");'
+
+    - name: "pktgen.range.src_ip"
+      signature: "pktgen.range.src_ip(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "string", description: "IP address" }
+      examples:
+        - 'pktgen.range.src_ip("all", "start", "10.13.0.1");'
+        - 'pktgen.range.src_ip("all", "inc", "0.0.0.3");'
+        - 'pktgen.range.src_ip("all", "min", "10.13.0.1");'
+        - 'pktgen.range.src_ip("all", "max", "10.13.0.64");'
+
+    - name: "pktgen.range.dst_port"
+      signature: "pktgen.range.dst_port(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "integer" }
+      examples:
+        - 'pktgen.range.dst_port("all", "start", 1234);'
+        - 'pktgen.range.dst_port("all", "inc", 4);'
+        - 'pktgen.range.dst_port("all", "min", 1234);'
+        - 'pktgen.range.dst_port("all", "max", 2345);'
+
+    - name: "pktgen.range.src_port"
+      signature: "pktgen.range.src_port(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "integer" }
+      examples:
+        - 'pktgen.range.src_port("all", "start", 5678);'
+        - 'pktgen.range.src_port("all", "inc", 5);'
+        - 'pktgen.range.src_port("all", "min", 1234);'
+        - 'pktgen.range.src_port("all", "max", 9999);'
+
+    - name: "pktgen.range.vlan_id"
+      signature: "pktgen.range.vlan_id(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "integer", valid_range: "1 - 4095" }
+      examples:
+        - 'pktgen.range.vlan_id("all", "start", 1);'
+        - 'pktgen.range.vlan_id("all", "inc", 0);'
+        - 'pktgen.range.vlan_id("all", "min", 1);'
+        - 'pktgen.range.vlan_id("all", "max", 4094);'
+
+    - name: "pktgen.range.pkt_size"
+      signature: "pktgen.range.pkt_size(portlist, property, value)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "property", type: "string", valid_values: ["start", "min", "max", "inc"] }
+        - { name: "value", type: "integer", valid_range: "64 - 1518" }
+      examples:
+        - 'pktgen.range.pkt_size("all", "start", 128);'
+        - 'pktgen.range.pkt_size("all", "inc", 2);'
+        - 'pktgen.range.pkt_size("all", "min", 64);'
+        - 'pktgen.range.pkt_size("all", "max", 1518);'
+
+    - name: "pktgen.range.proto"
+      signature: "pktgen.range.proto(portlist, proto)"
+      parameters:
+        - { name: "portlist", type: "string" }
+        - { name: "proto", type: "string", valid_values: ["tcp", "udp"] }
+      description: "Set IP protocol for range packets"
+      note: "Added in version 2.9.12; Lua command: pktgen.ip_proto()"
+
+# ── Traffic Control Functions ──
+traffic_control_api:
+  - name: "pktgen.start"
+    signature: "pktgen.start(portlist)"
+    description: "Start transmitting packets on portlist"
+    example: 'pktgen.start("all");'
+
+  - name: "pktgen.stop"
+    signature: "pktgen.stop(portlist)"
+    description: "Stop transmitting packets on portlist"
+    example: 'pktgen.stop("all");'
+
+  - name: "pktgen.prime"
+    signature: "pktgen.prime(portlist)"
+    description: "Transmit N packets on each port (N set via pktgen.set('prime', N))"
+    example: 'pktgen.prime("all");'
+
+  - name: "pktgen.clear"
+    signature: "pktgen.clear(portlist)"
+    description: "Clear statistics on portlist"
+    example: 'pktgen.clear("all");'
+
+  - name: "pktgen.cls"
+    signature: "pktgen.cls()"
+    description: "Clear screen / redisplay"
+    example: 'pktgen.cls();'
+
+  - name: "pktgen.reset"
+    signature: "pktgen.reset(portlist)"
+    description: "Reset ports to default configuration"
+    example: 'pktgen.reset("all");'
+
+  - name: "pktgen.process"
+    signature: "pktgen.process(portlist, state)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Enable/disable processing of ARP/ICMP/IPv4/IPv6 packets"
+    example: 'pktgen.process("all", "on");'
+
+# ── Protocol Functions ──
+protocol_api:
+  - name: "pktgen.icmp_echo"
+    signature: "pktgen.icmp_echo(portlist, state)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Enable/disable ICMP echo"
+    example: 'pktgen.icmp_echo("all", "on");'
+
+  - name: "pktgen.send_arp"
+    signature: "pktgen.send_arp(portlist, type)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "type", type: "string", valid_values: ["g", "request", "gratuitous", "req", "grat"] }
+    description: "Send ARP packet"
+    example: 'pktgen.send_arp("all", "g");'
+
+  - name: "pktgen.ping4"
+    signature: "pktgen.ping4(portlist)"
+    description: "Send IPv4 ICMP echo request"
+    example: 'pktgen.ping4("all");'
+
+  - name: "pktgen.ping6"
+    signature: "pktgen.ping6(portlist)"
+    description: "Send IPv6 ping"
+    note: "Commented out in examples, may not be fully supported"
+
+  - name: "pktgen.pcap"
+    signature: "pktgen.pcap(portlist, state)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Enable/disable PCAP packet sending"
+    example: 'pktgen.pcap("all", "on");'
+
+# ── UI/Navigation Functions ──
+ui_api:
+  - name: "pktgen.screen"
+    signature: "pktgen.screen(state)"
+    parameters:
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Enable/disable screen updates"
+    example: 'pktgen.screen("off");'
+
+  - name: "pktgen.page"
+    signature: "pktgen.page(name)"
+    parameters:
+      - { name: "name", type: "string", valid_values: ["0", "main", "range", "cpu", "pcap", "next", "sequence", "seq", "rnd", "log", "latency", "stats", "xstats", "rate"] }
+    description: "Change display page"
+    examples:
+      - 'pktgen.page("range");'
+      - 'pktgen.page("0");'
+
+  - name: "pktgen.port"
+    signature: "pktgen.port(n)"
+    parameters:
+      - { name: "n", type: "integer" }
+    description: "Set port number for sequence page display"
+    example: 'pktgen.port(2);'
+
+  - name: "pktgen.blink"
+    signature: "pktgen.blink(port, state)"
+    parameters:
+      - { name: "port", type: "string" }
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Blink LED on port"
+    example: 'pktgen.blink("0", "on");'
+
+  - name: "pktgen.set_range"
+    signature: "pktgen.set_range(portlist, state)"
+    parameters:
+      - { name: "portlist", type: "string" }
+      - { name: "state", type: "string", valid_values: ["on", "off"] }
+    description: "Enable/disable range mode on portlist"
+    note: "Previously pktgen.range() — renamed in version 3.0.15"
+    example: 'pktgen.set_range("all", "on");'
+
+# ── I/O Functions ──
+io_api:
+  - name: "pktgen.delay"
+    signature: "pktgen.delay(ms)"
+    parameters:
+      - { name: "ms", type: "integer", description: "milliseconds" }
+    description: "Delay execution for N milliseconds"
+    example: 'pktgen.delay(1000);'
+
+  - name: "pktgen.pause"
+    signature: "pktgen.pause(message, ms)"
+    parameters:
+      - { name: "message", type: "string", description: "Message to display" }
+      - { name: "ms", type: "integer", description: "milliseconds to pause" }
+    description: "Display a message and pause for N milliseconds"
+    example: 'pktgen.pause("Screen off\n", 1000);'
+
+  - name: "pktgen.continue"
+    signature: "pktgen.continue(message)"
+    parameters:
+      - { name: "message", type: "string", description: "Prompt to display" }
+    returns: "string (key pressed by user)"
+    description: "Display message and wait for user keypress"
+    example: 'key = pktgen.continue("\nPress any key: ");'
+
+  - name: "pktgen.save"
+    signature: "pktgen.save(filename)"
+    parameters:
+      - { name: "filename", type: "string" }
+    description: "Save current configuration to file"
+    example: 'pktgen.save("foobar.cmd");'
+
+  - name: "pktgen.load"
+    signature: "pktgen.load(filename)"
+    parameters:
+      - { name: "filename", type: "string" }
+    description: "Load configuration from file"
+    example: 'pktgen.load("foobar.cmd");'
+
+  - name: "pktgen.quit"
+    signature: "pktgen.quit()"
+    description: "Exit pktgen application"
+    note: "Added in version 3.4.7"
+
+# ── Deprecated/Changed API ──
+api_changes:
+  - change: "pktgen.range() renamed to pktgen.set_range()"
+    version: "3.0.15"
+    old_form: "pktgen.range('all', 'on')"
+    new_form: "pktgen.set_range('all', 'on')"
+  - change: "Range sub-functions moved from pktgen.dst_mac() to pktgen.range.dst_mac()"
+    version: "3.0.15"
+    note: "old commands still supported"
+  - change: "pktgen.set_mac() changed to 3 args: set_mac(portlist, 'src|dst', mac_addr)"
+    version: "19.08.0"
+  - change: "pktgen.seq() fixed Ethertype and protocol swap"
+    version: "3.2.7"
+  - change: "seq_cnt accepts seqCnt or seq_cnt strings in Lua"
+    version: "3.2.5"
+  - change: "Range Lua commands changed to table-only; pktgen.range.XYZ() only"
+    version: "20.09.0"
+    note: "Removed use of pktgen.XYZ() type commands (range table required instead)"

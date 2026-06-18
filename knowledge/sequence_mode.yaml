@@ -1,0 +1,152 @@
+# Pktgen Sequence Mode — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/commands.html
+#         https://pktgen.github.io/Pktgen-DPDK/lua.html
+#         https://pktgen.github.io/Pktgen-DPDK/scripts.html
+# Version: 23.06.1
+
+# ── Overview ──
+overview:
+  description: "Sequence mode sends a series of different packet configurations in order. Up to 16 distinct packet sequences can be defined per port. Each sequence entry specifies a complete packet template."
+  max_sequences_per_port: 16
+  seq_cnt_range: "0 - 16"
+  cli_set_cnt: "set <portlist> seq_cnt|seqcnt|seqCnt <value>"
+  lua_set_cnt: 'pktgen.set(portlist, "seq_cnt", value)'
+  enable_cli: "enable <portlist> sequence"
+  disable_cli: "disable <portlist> sequence"
+  page: "page sequence | page seq"
+
+# ── CLI Sequence Commands ──
+cli:
+  named_form:
+    description: "Named parameter form with keywords"
+    syntax: |
+      sequence <seq#> <portlist> dst <Mac> src <Mac> dst <IP> src <IP> sport <val> dport <val>
+                ipv4|ipv6 udp|tcp|icmp vlan <val> size <val> [teid <val>]
+    parameters:
+      - { keyword: "dst", value: "<Mac>", description: "Destination MAC address" }
+      - { keyword: "src", value: "<Mac>", description: "Source MAC address" }
+      - { keyword: "dst", value: "<IP>", description: "Destination IP address" }
+      - { keyword: "src", value: "<IP>", description: "Source IP address (must include netmask e.g. 1.2.3.4/24)" }
+      - { keyword: "sport", value: "<val>", description: "Source port" }
+      - { keyword: "dport", value: "<val>", description: "Destination port" }
+      - { positional: true, description: "One of: ipv4|ipv6" }
+      - { positional: true, description: "One of: udp|tcp|icmp" }
+      - { keyword: "vlan", value: "<val>", description: "VLAN ID" }
+      - { keyword: "size", value: "<val>", description: "Packet size" }
+      - { keyword: "teid", value: "<val>", description: "TEID value", optional: true }
+
+  positional_form:
+    description: "Compact positional form (13 parameters)"
+    syntax: |
+      sequence <seq#> <portlist> <dst-Mac> <src-Mac> <dst-IP> <src-IP> <sport> <dport>
+                ipv4|ipv6 udp|tcp|icmp <vlanid> <pktsize> [<teid>]
+
+  qos_form:
+    description: "Set CoS and ToS for a sequence entry"
+    syntax: "sequence <seq#> <portlist> cos <cos> tos <tos>"
+
+  vxlan_form:
+    description: "Set VxLAN for a sequence entry"
+    syntax: "sequence <seq#> <portlist> vxlan <flags> gid <group_id> vid <vxlan_id>"
+
+# ── Lua Sequence API ──
+lua:
+  seq_function:
+    name: "pktgen.seq"
+    signature: "pktgen.seq(seq#, portlist, eth_dst, eth_src, ip_dst, ip_src, sport, dport, ethType, ipProto, vlanid, pktSize)"
+    description: "Set a sequence entry with positional parameters"
+    parameters:
+      - { position: 1, name: "seq#", type: "integer", description: "Sequence number (0-based)" }
+      - { position: 2, name: "portlist", type: "string" }
+      - { position: 3, name: "eth_dst_addr", type: "string", description: "Destination MAC" }
+      - { position: 4, name: "eth_src_addr", type: "string", description: "Source MAC" }
+      - { position: 5, name: "ip_dst_addr", type: "string", description: "Destination IP" }
+      - { position: 6, name: "ip_src_addr", type: "string", description: "Source IP with CIDR mask" }
+      - { position: 7, name: "sport", type: "integer", description: "Source port" }
+      - { position: 8, name: "dport", type: "integer", description: "Destination port" }
+      - { position: 9, name: "ethType", type: "string", valid_values: ["ipv4", "ipv6", "vlan"] }
+      - { position: 10, name: "ipProto", type: "string", valid_values: ["udp", "tcp", "icmp"] }
+      - { position: 11, name: "vlanid", type: "integer", valid_range: "1 - 4095" }
+      - { position: 12, name: "pktSize", type: "integer", valid_range: "64 - 1518" }
+    example: 'pktgen.seq(0, "all", "0000:4455:6677", "0000:1234:5678", "10.11.0.1", "10.10.0.1/16", 5, 6, "ipv4", "udp", 1, 128);'
+    note_fix: "Fixed Ethertype and protocol swap in version 3.2.7"
+
+  seqTable_function:
+    name: "pktgen.seqTable"
+    signature: "pktgen.seqTable(seq#, portlist, table)"
+    description: "Set a sequence entry from a Lua table. Entries can be in any order."
+    note: "Recommended over seq() for clarity and extensibility"
+    table_keys:
+      required:
+        - { key: "eth_dst_addr", type: "string", description: "Ethernet destination address", example: '"0011:4455:6677"' }
+        - { key: "eth_src_addr", type: "string", description: "Ethernet source address", example: '"0011:1234:5678"' }
+        - { key: "ip_dst_addr", type: "string", description: "IP destination address", example: '"10.12.0.1"' }
+        - { key: "ip_src_addr", type: "string", description: "IP source address with CIDR mask", example: '"10.12.0.1/16"' }
+        - { key: "sport", type: "integer", description: "Source port", example: "9" }
+        - { key: "dport", type: "integer", description: "Destination port", example: "10" }
+        - { key: "ethType", type: "string", valid_values: ["ipv4", "ipv6", "vlan"], example: '"ipv4"' }
+        - { key: "ipProto", type: "string", valid_values: ["udp", "tcp", "icmp"], example: '"udp"' }
+        - { key: "vlanid", type: "integer", valid_range: "1 - 4095", example: "1" }
+        - { key: "pktSize", type: "integer", valid_range: "64 - 1518", example: "128" }
+      optional:
+        - { key: "teid", type: "integer", description: "TEID value", example: "3" }
+        - { key: "cos", type: "integer", description: "Class of Service", example: "5" }
+        - { key: "tos", type: "integer", description: "Type of Service", example: "6" }
+        - { key: "tcp_flags", type: "string", description: "TCP flags comma-separated", example: '"fin,ack,cwr"' }
+    example: |
+      local seq_table = {
+          ["eth_dst_addr"] = "0011:4455:6677",
+          ["eth_src_addr"] = "0011:1234:5678",
+          ["ip_dst_addr"] = "10.12.0.1",
+          ["ip_src_addr"] = "10.12.0.1/16",
+          ["sport"] = 9,
+          ["dport"] = 10,
+          ["ethType"] = "ipv4",
+          ["ipProto"] = "udp",
+          ["vlanid"] = 1,
+          ["pktSize"] = 128,
+          ["teid"] = 3,
+          ["cos"] = 5,
+          ["tos"] = 6,
+          ["tcp_flags"] = "fin,ack,cwr"
+      };
+      pktgen.seqTable(0, "all", seq_table);
+      pktgen.set("all", "seq_cnt", 4);
+
+  seq_cnt_setting:
+    description: "Set the number of active sequence entries"
+    cli: "set <portlist> seq_cnt|seqcnt|seqCnt <value>"
+    lua: 'pktgen.set(portlist, "seq_cnt", value)'
+    valid_range: "0 - 16"
+    note: "In Lua, accepts seqCnt or seq_cnt strings (fixed in version 3.2.5)"
+
+# ── Sequence Page Display ──
+page_display:
+  description: "Per-port sequence table display"
+  columns:
+    - "Seq# (0-15)"
+    - "Dst MAC Address"
+    - "Src MAC Address"
+    - "Dst IP Address"
+    - "Src IP Address"
+    - "Port S/D (Source/Destination ports)"
+    - "Protocol:VLAN"
+    - "Size"
+    - "TEID"
+  note: "Use 'port <number>' command to display sequences for a different port"
+  sequence_count_header: "Sequence Count: N of 16"
+
+# ── Pktgen Port Flag ──
+port_flag:
+  flag: "S"
+  name: "Sequence"
+  description: "Send Sequence packets enabled"
+
+# ── API Gotchas ──
+gotchas:
+  - "ip_src_addr MUST include CIDR netmask (e.g., /16, /24)"
+  - "In pktgen.seq(), Ethertype and protocol were swapped before version 3.2.7"
+  - "seq_cnt accepts multiple forms in Lua: 'seq_cnt', 'seqcnt', 'seqCnt'"
+  - "Sequence table entries can be in any order"
+  - "Maximum 16 sequence entries per port"
+  - ".pkt files use positional form; .lua files use seqTable"

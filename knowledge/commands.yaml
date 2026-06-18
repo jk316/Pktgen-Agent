@@ -1,0 +1,705 @@
+# Pktgen CLI Commands — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/commands.html
+#         https://pktgen.github.io/Pktgen-DPDK/running.html
+# Version: 23.06.1
+
+common_types:
+  portlist:
+    description: "A list of ports (no spaces) e.g. 2,4,6-9,12 or the word 'all'"
+    examples:
+      - "2,4,6-9,12"
+      - "3-5,8"
+      - "5"
+      - "all"
+  state:
+    description: "Use enable|disable or on|off to set the state"
+    values: ["enable", "disable", "on", "off"]
+  mac_address:
+    description: "MAC address in XX:XX:XX:XX:XX:XX or XXXX:XXXX:XXXX format"
+    examples:
+      - "00:11:22:33:44:55"
+      - "0011:2233:4455"
+  SMMI:
+    description: "start|min|max|inc (start, minimum, maximum, increment)"
+    properties: ["start", "min", "max", "inc"]
+
+directory_structure:
+  root:
+    entries:
+      - name: "pktgen"
+        type: "directory"
+        path: "pktgen/"
+      - name: "sbin"
+        type: "directory"
+        path: "sbin/"
+      - name: "dpdk-version"
+        type: "file"
+      - name: "copyright"
+        type: "file"
+
+  pktgen_bin:
+    path: "pktgen/bin"
+    commands:
+      - { name: "off", type: "Alias", target: "disable screen" }
+      - { name: "on", type: "Alias", target: "enable screen" }
+      - { name: "rate", type: "Command", description: "Rate setup commands" }
+      - { name: "plugin", type: "Command", description: "Plugin a shared object file" }
+      - { name: "dbg", type: "Command", description: "debug commands" }
+      - { name: "set", type: "Command", description: "set a number of options" }
+      - { name: "pcap", type: "Command", description: "pcap commands" }
+      - { name: "stp", type: "Alias", target: "stop all" }
+      - { name: "str", type: "Alias", target: "start all" }
+      - { name: "stop", type: "Command", description: "stop features" }
+      - { name: "start", type: "Command", description: "start features" }
+      - { name: "disable", type: "Command", description: "disable features" }
+      - { name: "enable", type: "Command", description: "enable features" }
+      - { name: "range", type: "Command", description: "Range commands" }
+      - { name: "theme", type: "Command", description: "Set, save, show the theme" }
+      - { name: "page", type: "Command", description: "change page displays" }
+      - { name: "seq", type: "Alias", target: "sequence" }
+      - { name: "sequence", type: "Command", description: "sequence command" }
+      - { name: "ping4", type: "Command", description: "Send a ping packet for IPv4" }
+      - { name: "port", type: "Command", description: "Switch between ports" }
+      - { name: "restart", type: "Command", description: "restart port" }
+      - { name: "rst", type: "Alias", target: "reset all" }
+      - { name: "reset", type: "Command", description: "reset pktgen configuration" }
+      - { name: "cls", type: "Alias", target: "redisplay" }
+      - { name: "redisplay", type: "Command", description: "redisplay the screen" }
+      - { name: "save", type: "Command", description: "save the current state" }
+      - { name: "load", type: "Command", description: "load command file" }
+      - { name: "geom", type: "Alias", target: "geometry" }
+      - { name: "geometry", type: "Command", description: "show the screen geometry" }
+      - { name: "clr", type: "Alias", target: "clear all stats" }
+      - { name: "clear", type: "Command", description: "clear stats, ..." }
+      - { name: "help", type: "Command", description: "help command" }
+
+  sbin:
+    path: "sbin"
+    commands:
+      - { name: "version", description: "Display version information" }
+      - { name: "echo", description: "simple echo a string to the screen" }
+      - { name: "script", description: "load and process cli command files" }
+      - { name: "env", description: "Show/del/get/set environment variables" }
+      - { name: "path", description: "display the execution path for commands" }
+      - { name: "hugepages", description: "display hugepage info", syntax: "hugepages" }
+      - { name: "cmap", description: "display the core mapping", syntax: "cmap" }
+      - { name: "more", description: "display a file content", syntax: "more <file>" }
+      - { name: "history", description: "display the current history", syntax: "history" }
+      - { name: "quit", description: "quit the application", syntax: "quit" }
+      - { name: "screen.clear", description: "clear the screen", syntax: "screen.clear" }
+      - { name: "pwd", description: "display current working directory", syntax: "pwd" }
+      - { name: "cd", description: "change working directory", syntax: "cd <dir>" }
+      - { name: "ls", description: "list current directory", syntax: "ls [-lr] <dir>" }
+      - { name: "rm", description: "remove a file or directory" }
+      - { name: "mkdir", description: "create a directory" }
+      - { name: "chelp", description: "CLI help - display information for DPDK" }
+      - { name: "sleep", description: "delay a number of seconds" }
+      - { name: "delay", description: "delay a number of milliseconds" }
+
+# ── Page Commands ──
+page_commands:
+  - syntax: "page [0-7]"
+    description: "Show the port pages or configuration or sequence page"
+  - syntax: "page main"
+    description: "Display page zero"
+  - syntax: "page range"
+    description: "Display the range packet page"
+  - syntax: "page cpu"
+    description: "Display the CPU page"
+  - syntax: "page pcap"
+    description: "Display the pcap page"
+  - syntax: "page next"
+    description: "Display next page of PCAP packets"
+  - syntax: "page sequence | page seq"
+    description: "Display a set of packets for a given port. Note: use 'port <number>' to display a new port sequence"
+  - syntax: "page rnd"
+    description: "Display the random bitfields to packets for a given port. Note: use 'port <number>' to display a new port sequence"
+  - syntax: "page log"
+    description: "Display the log messages page"
+  - syntax: "page latency"
+    description: "Display the latency page"
+  - syntax: "page stats"
+    description: "Display physical ports stats for all ports"
+  - syntax: "page xstats"
+    description: "Display port XSTATS values"
+  - syntax: "page rate"
+    description: "Display Rate Pacing values"
+
+# ── Enable/Disable Commands ──
+enable_disable_commands:
+  - syntax: "enable|disable <portlist> process"
+    description: "Enable or Disable processing of ARP/ICMP/IPv4/IPv6 packets"
+  - syntax: "enable|disable <portlist> mpls"
+    description: "Enable/disable sending MPLS entry in packets"
+  - syntax: "enable|disable <portlist> qinq"
+    description: "Enable/disable sending Q-in-Q header in packets"
+  - syntax: "enable|disable <portlist> gre"
+    description: "Enable/disable GRE support"
+  - syntax: "enable|disable <portlist> gre_eth"
+    description: "Enable/disable GRE with Ethernet frame payload"
+  - syntax: "enable|disable <portlist> vlan"
+    description: "Enable/disable VLAN tagging"
+  - syntax: "enable|disable <portlist> garp"
+    description: "Enable or Disable Gratuitous ARP packet processing"
+  - syntax: "enable|disable <portlist> random"
+    description: "Enable/disable Random packet support"
+  - syntax: "enable|disable <portlist> latency"
+    description: "Enable/disable latency testing"
+  - syntax: "enable|disable <portlist> pcap"
+    description: "Enable or Disable sending pcap packets on a portlist"
+  - syntax: "enable|disable <portlist> blink"
+    description: "Blink LED on port(s)"
+  - syntax: "enable|disable <portlist> rx_tap"
+    description: "Enable/Disable RX Tap support"
+  - syntax: "enable|disable <portlist> tx_tap"
+    description: "Enable/Disable TX Tap support"
+  - syntax: "enable|disable <portlist> icmp"
+    description: "Enable/Disable sending ICMP packets"
+  - syntax: "enable|disable <portlist> range"
+    description: "Enable or Disable the given portlist for sending a range of packets"
+  - syntax: "enable|disable <portlist> capture"
+    description: "Enable/disable packet capturing on a portlist. Disable capture on a port to save data into current working directory"
+  - syntax: "enable|disable <portlist> bonding"
+    description: "Enable call TX with zero packets for bonding driver"
+  - syntax: "enable|disable <portlist> vxlan"
+    description: "Send VxLAN packets"
+  - syntax: "enable|disable <portlist> rate"
+    description: "Enable/Disable Rate Packing on given ports"
+  - syntax: "enable|disable mac_from_arp"
+    description: "Enable/disable MAC address from ARP packet"
+  - syntax: "enable|disable screen"
+    description: "Enable/disable updating the screen and unlock/lock window"
+    aliases:
+      - { name: "off", description: "screen off shortcut" }
+      - { name: "on", description: "screen on shortcut" }
+
+# ── Set Commands ──
+set_commands:
+  - parameter: "count"
+    syntax: "set <portlist> count <value>"
+    description: "number of packets to transmit"
+    type: "integer"
+    lua_equivalent: "pktgen.set(portlist, \"count\", value)"
+
+  - parameter: "size"
+    syntax: "set <portlist> size <value>"
+    description: "size of the packet to transmit"
+    type: "integer"
+    lua_equivalent: "pktgen.set(portlist, \"size\", value)"
+    valid_range: "64 - 1518"
+
+  - parameter: "rate"
+    syntax: "set <portlist> rate <percent>"
+    description: "Packet rate in percentage"
+    type: "float"
+    lua_equivalent: "pktgen.set(portlist, \"rate\", value)"
+
+  - parameter: "txburst"
+    syntax: "set <portlist> txburst <value>"
+    description: "number of packets in a Tx burst"
+    type: "integer"
+    lua_equivalent: "pktgen.set(portlist, \"burst\", value)"
+
+  - parameter: "rxburst"
+    syntax: "set <portlist> rxburst <value>"
+    description: "number of packets in a Rx burst"
+    type: "integer"
+
+  - parameter: "tx_cycles"
+    syntax: "set <portlist> tx_cycles <value>"
+    description: "DEBUG to set the number of cycles per TX burst"
+    type: "integer"
+    note: "DEBUG only"
+
+  - parameter: "sport"
+    syntax: "set <portlist> sport <value>"
+    description: "Source port number for TCP"
+    type: "integer"
+    lua_equivalent: "pktgen.set(portlist, \"sport\", value)"
+
+  - parameter: "dport"
+    syntax: "set <portlist> dport <value>"
+    description: "Destination port number for TCP"
+    type: "integer"
+    lua_equivalent: "pktgen.set(portlist, \"dport\", value)"
+
+  - parameter: "ttl"
+    syntax: "set <portlist> ttl <value>"
+    description: "Set the TTL value for the single port more"
+    type: "integer"
+
+  - parameter: "seq_cnt"
+    syntax: "set <portlist> seq_cnt|seqcnt|seqCnt <value>"
+    description: "Set the number of packet in sequence to send"
+    type: "integer"
+    valid_range: "0 - 16"
+    lua_equivalent: "pktgen.set(portlist, \"seq_cnt\", value)"
+    aliases: ["seqcnt", "seqCnt"]
+
+  - parameter: "prime"
+    syntax: "set <portlist> prime <value>"
+    description: "Set the number of packets to send on prime command"
+    type: "integer"
+    lua_equivalent: "pktgen.set(portlist, \"prime\", value)"
+
+  - parameter: "dump"
+    syntax: "set <portlist> dump <value>"
+    description: "Dump the next 1-32 received packets to the screen. Dumped packets are in the log, use 'page log' to view"
+    type: "integer"
+    valid_range: "1 - 32"
+
+  - parameter: "vlan"
+    syntax: "set <portlist> vlan|vlanid <value>"
+    description: "Set the VLAN ID value for the portlist"
+    type: "integer"
+    valid_range: "1 - 4095"
+    aliases: ["vlanid"]
+    lua_equivalent: "pktgen.vlanid(portlist, value)"
+
+  - parameter: "jitter"
+    syntax: "set <portlist> jitter <value>"
+    description: "Set the jitter threshold in micro-seconds"
+    type: "integer"
+    unit: "micro-seconds"
+
+  - parameter: "src_mac"
+    syntax: "set <portlist> src mac <addr>"
+    description: "Set source MAC address"
+    type: "mac_address"
+    lua_equivalent: "pktgen.set_mac(portlist, \"src\", addr)"
+
+  - parameter: "dst_mac"
+    syntax: "set <portlist> dst mac <addr>"
+    description: "Set destination MAC address"
+    type: "mac_address"
+    lua_equivalent: "pktgen.set_mac(portlist, \"dst\", addr)"
+
+  - parameter: "type"
+    syntax: "set <portlist> type ipv4|ipv6|vlan|arp"
+    description: "Set the packet type to IPv4 or IPv6 or VLAN"
+    type: "enum"
+    valid_values: ["ipv4", "ipv6", "vlan", "arp"]
+    lua_equivalent: "pktgen.set_type(portlist, type)"
+
+  - parameter: "proto"
+    syntax: "set <portlist> proto udp|tcp|icmp"
+    description: "Set the packet protocol to UDP or TCP or ICMP per port"
+    type: "enum"
+    valid_values: ["udp", "tcp", "icmp"]
+    lua_equivalent: "pktgen.set_proto(portlist, proto)"
+
+  - parameter: "pattern"
+    syntax: "set <portlist> pattern <type>"
+    description: "Set the fill pattern type"
+    type: "enum"
+    valid_values:
+      - { value: "abc", description: "Default pattern of abc string" }
+      - { value: "none", description: "No fill pattern, maybe random data" }
+      - { value: "zero", description: "Fill of zero bytes" }
+      - { value: "user", description: "User supplied string of max 16 bytes" }
+
+  - parameter: "user_pattern"
+    syntax: "set <portlist> user pattern <string>"
+    description: "A 16 byte string, must set 'pattern user' command"
+    type: "string"
+    max_length: 16
+    prerequisite: "set <portlist> pattern user"
+
+  - parameter: "src_ip"
+    syntax: "set <portlist> src ip <ipaddr>"
+    description: "Set source IP address. Source must include network mask e.g. 10.1.2.3/24"
+    type: "ip_address"
+    format: "cidr"
+    lua_equivalent: "pktgen.set_ipaddr(port, \"src\", ipaddr)"
+
+  - parameter: "dst_ip"
+    syntax: "set <portlist> dst ip <ipaddr>"
+    description: "Set destination IP address"
+    type: "ip_address"
+    lua_equivalent: "pktgen.set_ipaddr(port, \"dst\", ipaddr)"
+
+  - parameter: "qinqids"
+    syntax: "set <portlist> qinqids <id1> <id2>"
+    description: "Set the Q-in-Q ID's for the portlist"
+    type: "integer pair"
+
+  - parameter: "rnd"
+    syntax: "set <portlist> rnd <idx> <off> <mask>"
+    description: "Set random mask for all transmitted packets from portlist"
+    type: "random_mask"
+    parameters:
+      - { name: "idx", description: "random mask index slot", type: "integer" }
+      - { name: "off", description: "offset in bytes to apply mask value", type: "integer" }
+      - { name: "mask", description: "up to 32 bit long mask specification (empty to disable)", type: "bitmask" }
+    mask_spec:
+      - { char: "0", meaning: "bit will be 0" }
+      - { char: "1", meaning: "bit will be 1" }
+      - { char: ".", meaning: "bit will be ignored (original value is retained)" }
+      - { char: "X", meaning: "bit will get random value" }
+    lua_equivalent: "pktgen.rnd(portlist, idx, off, mask)"
+
+  - parameter: "cos"
+    syntax: "set <portlist> cos <value>"
+    description: "Set the CoS value for the portlist"
+    type: "integer"
+
+  - parameter: "tos"
+    syntax: "set <portlist> tos <value>"
+    description: "Set the ToS value for the portlist"
+    type: "integer"
+
+  - parameter: "vxlan"
+    syntax: "set <portlist> vxlan <flags> <group id> <vxlan_id>"
+    description: "Set the vxlan values"
+    type: "vxlan_config"
+    parameters:
+      - { name: "flags", type: "integer" }
+      - { name: "group_id", type: "integer" }
+      - { name: "vxlan_id", type: "integer" }
+
+  - parameter: "ports_per_page"
+    syntax: "set ports_per_page <value>"
+    description: "Set ports per page value"
+    type: "integer"
+    valid_range: "1 - 6"
+    lua_equivalent: "pktgen.ports_per_page(value)"
+
+# ── Range Commands ──
+range_commands:
+  note: "SMMI = start|min|max|inc (start, minimum, maximum, increment)"
+
+  - field: "src_mac"
+    syntax: "range <portlist> src mac <SMMI> <etheraddr>"
+    syntax_compact: "range <portlist> src mac <start> <min> <max> <inc>"
+    description: "Set source MAC address range"
+    type: "mac_address"
+    lua_equivalent: "pktgen.range.src_mac(portlist, SMMI, value)"
+    example: |
+      range 0 src mac start 00:00:00:00:00:00
+      range 0 src mac 00:00:00:00:00:00 00:00:00:00:00:00 00:12:34:56:78:90 00:00:00:01:01:01
+
+  - field: "dst_mac"
+    syntax: "range <portlist> dst mac <SMMI> <etheraddr>"
+    syntax_compact: "range <portlist> dst mac <start> <min> <max> <inc>"
+    description: "Set destination MAC address range"
+    type: "mac_address"
+    lua_equivalent: "pktgen.range.dst_mac(portlist, SMMI, value)"
+    example: |
+      range 0 dst mac max 00:12:34:56:78:90
+
+  - field: "src_ip"
+    syntax: "range <portlist> src ip <SMMI> <ipaddr>"
+    syntax_compact: "range <portlist> src ip <start> <min> <max> <inc>"
+    description: "Set source IP address range"
+    type: "ip_address"
+    lua_equivalent: "pktgen.range.src_ip(portlist, SMMI, value)"
+
+  - field: "dst_ip"
+    syntax: "range <portlist> dst ip <SMMI> <ipaddr>"
+    syntax_compact: "range <portlist> dst ip <start> <min> <max> <inc>"
+    description: "Set destination IP address range"
+    type: "ip_address"
+    lua_equivalent: "pktgen.range.dst_ip(portlist, SMMI, value)"
+    example: |
+      range 0 dst ip start 0.0.0.0
+      range 0 dst ip min 0.0.0.0
+      range 0 dst ip max 1.2.3.4
+      range 0 dst ip inc 0.0.1.0
+      range 0 dst ip 0.0.0.0 0.0.0.0 1.2.3.4 0.0.1.0
+
+  - field: "proto"
+    syntax: "range <portlist> proto tcp|udp"
+    description: "Set the IP protocol type for range"
+    type: "enum"
+    valid_values: ["tcp", "udp"]
+    lua_equivalent: "pktgen.range.proto(portlist, proto)"
+
+  - field: "src_port"
+    syntax: "range <portlist> src port <SMMI> <value>"
+    syntax_compact: "range <portlist> src port <start> <min> <max> <inc>"
+    description: "Set UDP/TCP source port number range"
+    type: "integer"
+    lua_equivalent: "pktgen.range.src_port(portlist, SMMI, value)"
+
+  - field: "dst_port"
+    syntax: "range <portlist> dst port <SMMI> <value>"
+    syntax_compact: "range <portlist> dst port <start> <min> <max> <inc>"
+    description: "Set UDP/TCP destination port number range"
+    type: "integer"
+    lua_equivalent: "pktgen.range.dst_port(portlist, SMMI, value)"
+
+  - field: "vlan"
+    syntax: "range <portlist> vlan <SMMI> <value>"
+    syntax_compact: "range <portlist> vlan <start> <min> <max> <inc>"
+    description: "Set vlan id range"
+    type: "integer"
+    valid_range: "1 - 4095"
+    lua_equivalent: "pktgen.range.vlan_id(portlist, SMMI, value)"
+
+  - field: "size"
+    syntax: "range <portlist> size <SMMI> <value>"
+    syntax_compact: "range <portlist> size <start> <min> <max> <inc>"
+    description: "Set pkt size range"
+    type: "integer"
+    valid_range: "64 - 1518"
+    lua_equivalent: "pktgen.range.pkt_size(portlist, SMMI, value)"
+
+  - field: "teid"
+    syntax: "range <portlist> teid <SMMI> <value>"
+    syntax_compact: "range <portlist> teid <start> <min> <max> <inc>"
+    description: "Set TEID value range"
+    type: "integer"
+
+  - field: "mpls_entry"
+    syntax: "range <portlist> mpls entry <hex-value>"
+    description: "Set MPLS entry value"
+    type: "hex"
+
+  - field: "qinq"
+    syntax: "range <portlist> qinq index <val1> <val2>"
+    description: "Set QinQ index values"
+    type: "integer pair"
+
+  - field: "gre_key"
+    syntax: "range <portlist> gre key <value>"
+    description: "Set GRE key value"
+    type: "integer"
+
+  - field: "cos"
+    syntax: "range <portlist> cos <SMMI> <value>"
+    description: "Set cos value range"
+    type: "integer"
+    lua_equivalent: "pktgen.range.cos(portlist, SMMI, value)"
+
+  - field: "tos"
+    syntax: "range <portlist> tos <SMMI> <value>"
+    description: "Set tos value range"
+    type: "integer"
+    lua_equivalent: "pktgen.range.tos(portlist, SMMI, value)"
+
+# ── Sequence Commands ──
+sequence_commands:
+  - syntax: |
+      sequence <seq#> <portlist> dst <Mac> src <Mac> dst <IP> src <IP> sport <val> dport <val>
+                ipv4|ipv6 udp|tcp|icmp vlan <val> size <val> [teid <val>]
+    description: "Set sequence packet (named parameter form)"
+    lua_equivalent: "pktgen.seq(seq#, portlist, dst_mac, src_mac, dst_ip, src_ip, sport, dport, ethType, ipProto, vlanid, pktSize)"
+    parameters:
+      - { position: 1, name: "seq#", description: "The packet sequence number", type: "integer" }
+      - { position: 2, name: "portlist", type: "portlist" }
+      - { position: 3, name: "dst-Mac", type: "mac_address" }
+      - { position: 4, name: "src-Mac", type: "mac_address" }
+      - { position: 5, name: "dst-IP", type: "ip_address" }
+      - { position: 6, name: "src-IP", type: "ip_address", note: "must include netmask e.g. 1.2.3.4/24" }
+      - { position: 7, name: "sport", type: "integer" }
+      - { position: 8, name: "dport", type: "integer" }
+      - { position: 9, name: "ethType", type: "enum", valid_values: ["ipv4", "ipv6", "vlan"] }
+      - { position: 10, name: "ipProto", type: "enum", valid_values: ["udp", "tcp", "icmp"] }
+      - { position: 11, name: "vlanid", type: "integer" }
+      - { position: 12, name: "pktsize", type: "integer" }
+      - { position: 13, name: "teid", type: "integer", optional: true }
+
+  - syntax: |
+      sequence <seq#> <portlist> <dst-Mac> <src-Mac> <dst-IP> <src-IP> <sport> <dport>
+                ipv4|ipv6 udp|tcp|icmp <vlanid> <pktsize> [<teid>]
+    description: "Set sequence packet (positional form, 13 parameters)"
+    lua_equivalent: "pktgen.seq(seq#, portlist, dst_mac, src_mac, dst_ip, src_ip, sport, dport, ethType, ipProto, vlanid, pktSize)"
+
+  - syntax: "sequence <seq#> <portlist> cos <cos> tos <tos>"
+    description: "Set sequence CoS and ToS values"
+
+  - syntax: "sequence <seq#> <portlist> vxlan <flags> gid <group_id> vid <vxlan_id>"
+    description: "Set the sequence packet VxLAN information"
+
+# ── PCAP Commands ──
+pcap_commands:
+  - syntax: "pcap show"
+    description: "Show PCAP information"
+  - syntax: "pcap index"
+    description: "Move the PCAP file index to the given packet number. 0 - rewind, -1 - end of file"
+  - syntax: "pcap filter <portlist> <string>"
+    description: "PCAP filter string to filter packets on receive"
+
+# ── Start/Stop Commands ──
+start_stop_commands:
+  - syntax: "start <portlist>"
+    description: "Start transmitting packets"
+    lua_equivalent: "pktgen.start(portlist)"
+  - syntax: "stop <portlist>"
+    description: "Stop transmitting packets"
+    lua_equivalent: "pktgen.stop(portlist)"
+  - syntax: "stp"
+    description: "Stop all ports from transmitting"
+    alias_for: "stop all"
+  - syntax: "str"
+    description: "Start all ports transmitting"
+    alias_for: "start all"
+  - syntax: "start <portlist> prime"
+    description: "Transmit packets on each port listed (see set prime command)"
+    lua_equivalent: "pktgen.prime(portlist)"
+  - syntax: "start <portlist> arp <type>"
+    description: "Send a ARP type packet"
+    parameters:
+      - { name: "type", type: "enum", valid_values: ["request", "gratuitous", "req", "grat"] }
+
+# ── Debug Commands ──
+debug_commands:
+  - syntax: "dbg l2p"
+    description: "Dump out internal lcore to port mapping"
+  - syntax: "dbg tx_dbg"
+    description: "Enable tx debug output"
+  - syntax: "dbg mempool <portlist> <type>"
+    description: "Dump out the mempool info for a given type"
+  - syntax: "dbg pdump <portlist>"
+    description: "Hex dump the first packet to be sent, single packet mode only"
+  - syntax: "dbg memzone"
+    description: "List all of the current memzones"
+  - syntax: "dbg memseg"
+    description: "List all of the current memsegs"
+  - syntax: "dbg hexdump <addr> <len>"
+    description: "hex dump memory at given address"
+  - syntax: "dbg break"
+    description: "break into the debugger"
+  - syntax: "dbg memcpy [loop-cnt KBytes]"
+    description: "run a memcpy test"
+
+# ── Special/Utility Commands ──
+utility_commands:
+  - syntax: "save <path-to-file>"
+    description: "Save a configuration file using the filename"
+    lua_equivalent: "pktgen.save(filename)"
+
+  - syntax: "load <path-to-file>"
+    description: "Load a command/script file from the given path"
+    lua_equivalent: "pktgen.load(filename)"
+
+  - syntax: "script <filename>"
+    description: "Execute the Lua script code in file (www.lua.org) (if Lua enabled)"
+
+  - syntax: "lua 'lua string'"
+    description: "Execute the Lua code in the string (if Lua enabled)"
+
+  - syntax: "clear <portlist> stats"
+    description: "Clear the statistics"
+    lua_equivalent: "pktgen.clear(portlist)"
+
+  - syntax: "clr"
+    description: "Clear all Statistics"
+    alias_for: "clear all stats"
+    lua_equivalent: "pktgen.cls()"
+
+  - syntax: "reset <portlist>"
+    description: "Reset the configuration the ports to the default"
+    lua_equivalent: "pktgen.reset(portlist)"
+
+  - syntax: "rst"
+    description: "Reset the configuration for all ports"
+    alias_for: "reset all"
+
+  - syntax: "ports per page [1-6]"
+    description: "Set the number of ports displayed per page"
+    valid_range: "1 - 6"
+
+  - syntax: "port <number>"
+    description: "Sets the sequence packets to display for a given port"
+    lua_equivalent: "pktgen.port(number)"
+
+  - syntax: "restart <portlist>"
+    description: "Restart or stop a ethernet port and restart"
+
+  - syntax: "ping4 <portlist>"
+    description: "Send a IPv4 ICMP echo request on the given portlist"
+    lua_equivalent: "pktgen.ping4(portlist)"
+
+# ── Theme Commands ──
+theme_commands:
+  - syntax: "theme <item> <fg> <bg> <attr>"
+    description: "Set color for item with fg/bg color and attribute value"
+  - syntax: "theme show"
+    description: "List the item strings, colors and attributes to the items"
+  - syntax: "theme save <filename>"
+    description: "Save the current color theme to a file"
+
+# ── Plugin Commands ──
+plugin_commands:
+  - syntax: "plugin"
+    description: "Show the plugins currently installed"
+  - syntax: "plugin load <filename>"
+    description: "Load a plugin file"
+  - syntax: "plugin load <filename> <path>"
+    description: "Load a plugin file at path"
+  - syntax: "plugin rm|delete <plugin>"
+    description: "Remove or delete a plugin"
+
+# ── Rate Commands (Packet Pacing) ──
+rate_commands:
+  - syntax: "rate <portlist> count <value>"
+    description: "number of packets to transmit"
+  - syntax: "rate <portlist> size <value>"
+    description: "size of the packet to transmit"
+  - syntax: "rate <portlist> rate <percent>"
+    description: "Packet rate in percentage"
+  - syntax: "rate <portlist> burst <value>"
+    description: "number of packets in a burst"
+  - syntax: "rate <portlist> sport <value>"
+    description: "Source port number for TCP"
+  - syntax: "rate <portlist> dport <value>"
+    description: "Destination port number for TCP"
+  - syntax: "rate <portlist> ttl <value>"
+    description: "Set the TTL value for the single port more"
+  - syntax: "rate <portlist> src mac <addr>"
+    description: "Set source MAC address"
+  - syntax: "rate <portlist> dst mac <addr>"
+    description: "Set destination MAC address"
+  - syntax: "rate <portlist> type ipv4|ipv6|vlan|arp"
+    description: "Set the packet type to IPv4 or IPv6 or VLAN"
+  - syntax: "rate <portlist> proto udp|tcp|icmp"
+    description: "Set the packet protocol to UDP or TCP or ICMP per port"
+  - syntax: "rate <portlist> src ip <ipaddr>"
+    description: "Set source IP address. Source must include network mask"
+  - syntax: "rate <portlist> dst ip <ipaddr>"
+    description: "Set destination IP address"
+  - syntax: "rate <portlist> fps <value>"
+    description: "Set the frame per second value e.g. 60fps"
+  - syntax: "rate <portlist> lines <value>"
+    description: "Set the number of video lines, e.g. 720"
+  - syntax: "rate <portlist> pixels <value>"
+    description: "Set the number of pixels per line, e.g. 1280"
+  - syntax: "rate <portlist> color bits <value>"
+    description: "Set the color bit size 8, 16, 24, ..."
+  - syntax: "rate <portlist> payload size <value>"
+    description: "Set the payload size"
+  - syntax: "rate <portlist> overhead <value>"
+    description: "Set the packet overhead + payload = total packet size"
+
+# ── Port Flag Legend ──
+port_flags:
+  - { flag: "P", name: "Promiscuous", description: "Promiscuous mode enabled" }
+  - { flag: "E", name: "ICMP Echo", description: "ICMP Echo enabled" }
+  - { flag: "A", name: "ARP Request", description: "Send ARP Request flag" }
+  - { flag: "G", name: "Gratuitous ARP", description: "Send Gratuitous ARP flag" }
+  - { flag: "C", name: "TX Cleanup", description: "TX Cleanup flag" }
+  - { flag: "p", name: "PCAP", description: "PCAP enabled flag" }
+  - { flag: "S", name: "Sequence", description: "Send Sequence packets enabled" }
+  - { flag: "R", name: "Range", description: "Send Range packets enabled" }
+  - { flag: "D", name: "DPI Scan", description: "DPI Scanning enabled (If Enabled)" }
+  - { flag: "I", name: "Input Process", description: "Process packets on input enabled" }
+  - { flag: "*", name: "TAP", description: "Using TAP interface for this port can be [-rt*]" }
+  - { flag: "L", name: "Latency", description: "Send Latency packets" }
+  - { flag: "V", name: "VLAN", description: "Send VLAN ID tag" }
+  - { flag: "M", name: "MPLS", description: "Send MPLS header" }
+  - { flag: "Q", name: "Q-in-Q", description: "Send Q-in-Q tags" }
+  - { flag: "g_lower", name: "GARP Process", description: "Process GARP packets" }
+  - { flag: "g_upper", name: "GRE IPv4", description: "Perform GRE with IPv4 payload" }
+  - { flag: "G_upper", name: "GRE Ethernet", description: "Perform GRE with Ethernet payload" }
+  - { flag: "C_upper", name: "Capture", description: "Capture received packets" }
+  - { flag: "R_upper", name: "Random", description: "Random bitfield(s) are applied" }
+
+notes:
+  - "The pktgen output display needs 132 columns and about 42 lines to display currently"
+  - "Colors best seen on a black background for now"
+  - "More than 4-6 ports requires wider display"
+  - "Uses VT100 control codes; Hyperterminal on Windows is not compatible"
+  - "On a 10GB NIC if the transceivers are not attached the screen updates will go very slow"
+  - "In the BIOS make sure the HPET High Precision Event Timer is enabled"
+  - "Also make sure hyper-threading is enabled"

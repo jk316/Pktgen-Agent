@@ -1,0 +1,229 @@
+# Pktgen Range Mode — Complete Reference
+# Source: https://pktgen.github.io/Pktgen-DPDK/commands.html
+#         https://pktgen.github.io/Pktgen-DPDK/lua.html
+# Version: 23.06.1
+
+# ── Overview ──
+overview:
+  description: "Range mode sends packets with varying field values across a defined range. Each transmitted packet increments select fields by the 'inc' value, wrapping from 'min' to 'max'."
+  enable_cli: "enable <portlist> range"
+  disable_cli: "disable <portlist> range"
+  enable_lua: 'pktgen.set_range(portlist, "on")'
+  disable_lua: 'pktgen.set_range(portlist, "off")'
+  page: "page range"
+
+# ── SMMI Model ──
+SMMI:
+  description: "start|min|max|inc — defines the range progression for each field"
+  properties:
+    start:
+      name: "start"
+      description: "Initial value for the field"
+      order: 1
+    min:
+      name: "min"
+      description: "Minimum value; field wraps from max back to min"
+      order: 2
+    max:
+      name: "max"
+      description: "Maximum value; after reaching max, wraps to min"
+      order: 3
+    inc:
+      name: "inc"
+      description: "Increment per packet. If zero, uses start values only (no variation)"
+      order: 4
+      note: "When inc is zero, start values are used for all packets"
+
+# ── Rangeable Fields ──
+fields:
+  dst_mac:
+    name: "Destination MAC Address"
+    type: "mac_address"
+    cli_prefix: "range <portlist> dst mac"
+    lua_function: "pktgen.range.dst_mac"
+    lua_signature: "pktgen.range.dst_mac(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> dst mac <start> <min> <max> <inc>"
+    example_cli: |
+      range 0 dst mac start 00:00:00:00:00:00
+      range 0 dst mac max 00:12:34:56:78:90
+      range 0 dst mac 00:00:00:00:00:00 00:00:00:00:00:00 00:12:34:56:78:90 00:00:00:01:01:01
+    example_lua: |
+      pktgen.range.dst_mac("all", "start", "0011:2233:4455");
+
+  src_mac:
+    name: "Source MAC Address"
+    type: "mac_address"
+    cli_prefix: "range <portlist> src mac"
+    lua_function: "pktgen.range.src_mac"
+    lua_signature: "pktgen.range.src_mac(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> src mac <start> <min> <max> <inc>"
+    example_lua: |
+      pktgen.range.src_mac("all", "start", "0033:2233:4455");
+
+  dst_ip:
+    name: "Destination IP Address"
+    type: "ip_address"
+    cli_prefix: "range <portlist> dst ip"
+    lua_function: "pktgen.range.dst_ip"
+    lua_signature: "pktgen.range.dst_ip(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> dst ip <start> <min> <max> <inc>"
+    examples_cli: |
+      range 0 dst ip start 0.0.0.0
+      range 0 dst ip min 0.0.0.0
+      range 0 dst ip max 1.2.3.4
+      range 0 dst ip inc 0.0.1.0
+      range 0 dst ip 0.0.0.0 0.0.0.0 1.2.3.4 0.0.1.0
+    examples_lua: |
+      pktgen.range.dst_ip("all", "start", "10.12.0.1");
+      pktgen.range.dst_ip("all", "inc", "0.0.0.2");
+      pktgen.range.dst_ip("all", "min", "10.12.0.1");
+      pktgen.range.dst_ip("all", "max", "10.12.0.64");
+
+  src_ip:
+    name: "Source IP Address"
+    type: "ip_address"
+    cli_prefix: "range <portlist> src ip"
+    lua_function: "pktgen.range.src_ip"
+    lua_signature: "pktgen.range.src_ip(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> src ip <start> <min> <max> <inc>"
+    examples_lua: |
+      pktgen.range.src_ip("all", "start", "10.13.0.1");
+      pktgen.range.src_ip("all", "inc", "0.0.0.3");
+      pktgen.range.src_ip("all", "min", "10.13.0.1");
+      pktgen.range.src_ip("all", "max", "10.13.0.64");
+
+  ip_proto:
+    name: "IP Protocol Type"
+    type: "enum"
+    valid_values: ["tcp", "udp"]
+    cli_prefix: "range <portlist> proto"
+    lua_function: "pktgen.range.proto"
+    lua_signature: "pktgen.range.proto(portlist, proto)"
+    note: "Added in version 2.9.12"
+
+  dst_port:
+    name: "Destination Port"
+    type: "integer"
+    cli_prefix: "range <portlist> dst port"
+    lua_function: "pktgen.range.dst_port"
+    lua_signature: "pktgen.range.dst_port(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> dst port <start> <min> <max> <inc>"
+    example_lua: |
+      pktgen.range.dst_port("all", "start", 1234);
+      pktgen.range.dst_port("all", "inc", 4);
+      pktgen.range.dst_port("all", "min", 1234);
+      pktgen.range.dst_port("all", "max", 2345);
+
+  src_port:
+    name: "Source Port"
+    type: "integer"
+    cli_prefix: "range <portlist> src port"
+    lua_function: "pktgen.range.src_port"
+    lua_signature: "pktgen.range.src_port(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> src port <start> <min> <max> <inc>"
+    example_lua: |
+      pktgen.range.src_port("all", "start", 5678);
+      pktgen.range.src_port("all", "inc", 5);
+      pktgen.range.src_port("all", "min", 1234);
+      pktgen.range.src_port("all", "max", 9999);
+
+  vlan_id:
+    name: "VLAN ID"
+    type: "integer"
+    valid_range: "1 - 4095"
+    cli_prefix: "range <portlist> vlan"
+    lua_function: "pktgen.range.vlan_id"
+    lua_signature: "pktgen.range.vlan_id(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> vlan <start> <min> <max> <inc>"
+    example_lua: |
+      pktgen.range.vlan_id("all", "start", 1);
+      pktgen.range.vlan_id("all", "inc", 0);
+      pktgen.range.vlan_id("all", "min", 1);
+      pktgen.range.vlan_id("all", "max", 4094);
+
+  pkt_size:
+    name: "Packet Size"
+    type: "integer"
+    valid_range: "64 - 1518"
+    units: "bytes"
+    cli_prefix: "range <portlist> size"
+    lua_function: "pktgen.range.pkt_size"
+    lua_signature: "pktgen.range.pkt_size(portlist, property, value)"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> size <start> <min> <max> <inc>"
+    example_lua: |
+      pktgen.range.pkt_size("all", "start", 128);
+      pktgen.range.pkt_size("all", "inc", 2);
+      pktgen.range.pkt_size("all", "min", 64);
+      pktgen.range.pkt_size("all", "max", 1518);
+
+  teid:
+    name: "TEID (Tunnel Endpoint Identifier)"
+    type: "integer"
+    cli_prefix: "range <portlist> teid"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> teid <start> <min> <max> <inc>"
+
+  mpls_entry:
+    name: "MPLS Entry"
+    type: "hex"
+    cli_prefix: "range <portlist> mpls entry"
+    syntax: "range <portlist> mpls entry <hex-value>"
+
+  qinq:
+    name: "Q-in-Q Index"
+    type: "integer pair"
+    cli_prefix: "range <portlist> qinq index"
+    syntax: "range <portlist> qinq index <val1> <val2>"
+
+  gre_key:
+    name: "GRE Key"
+    type: "integer"
+    cli_prefix: "range <portlist> gre key"
+    syntax: "range <portlist> gre key <value>"
+
+  cos:
+    name: "Class of Service"
+    type: "integer"
+    cli_prefix: "range <portlist> cos"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> cos <start> <min> <max> <inc>"
+
+  tos:
+    name: "Type of Service"
+    type: "integer"
+    cli_prefix: "range <portlist> tos"
+    properties: ["start", "min", "max", "inc"]
+    compact_cli: "range <portlist> tos <start> <min> <max> <inc>"
+
+# ── Range Page Display ──
+range_page_display:
+  description: "Per-port display of range parameters"
+  columns:
+    - "dst.ip: start, inc, min, max"
+    - "src.ip: start, inc, min, max"
+    - "ip_proto: TCP/UDP"
+    - "dst.port: start, inc, min, max"
+    - "src.port: start, inc, min, max"
+    - "vlan.id: start, inc, min, max (range 1-4095)"
+    - "pkt.size: start, inc, min, max (range 64-1518)"
+    - "dst.mac: start, inc, min, max"
+    - "src.mac: start, inc, min, max"
+    - "gtpu.teid: start, inc, min, max"
+
+# ── API Changes ──
+api_changes:
+  - version: "20.09.0"
+    change: "Lua range commands changed to table-only; pktgen.range.XYZ() must be used"
+    old_form: "pktgen.dst_mac() etc."
+    new_form: "pktgen.range.dst_mac() etc."
+  - version: "3.0.15"
+    change: "Range sub-functions moved from pktgen.dst_mac() to pktgen.range.dst_mac()"
+    note: "Old commands still supported"

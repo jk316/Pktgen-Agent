@@ -1,0 +1,519 @@
+# Pktgen Examples — Complete Collection
+# Source: All Pktgen documentation pages
+# Version: 23.06.1
+# Purpose: Verbatim preservation of all official examples for script generation reference
+
+examples:
+
+  # ── Hello World Example (lua.html, socket.html) ──
+  - id: "hello_world"
+    source_page: "lua.html"
+    source_url: "https://pktgen.github.io/Pktgen-DPDK/lua.html"
+    also_in: "socket.html"
+    description: "Simple hello world to verify Lua is working in pktgen"
+    api_functions_used:
+      - "pktgen.info.Lua_Version"
+      - "pktgen.info.Pktgen_Version"
+      - "pktgen.info.Pktgen_Copyright"
+      - "pktgen.info.Pktgen_Authors"
+      - "printf()"
+    code: |
+      package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"
+
+      require "Pktgen"
+      printf("Lua Version      : %s\n", pktgen.info.Lua_Version);
+      printf("Pktgen Version   : %s\n", pktgen.info.Pktgen_Version);
+      printf("Pktgen Copyright : %s\n", pktgen.info.Pktgen_Copyright);
+      printf("Pktgen Authors   : %s\n", pktgen.info.Pktgen_Authors);
+
+      printf("\nHello World!!!!\n");
+
+  # ── Info Example (lua.html) ──
+  - id: "info"
+    source_page: "lua.html"
+    description: "Print metadata and configuration information"
+    api_functions_used:
+      - "pktgen.info.*"
+      - "pktgen.portCount()"
+      - "pktgen.totalPorts()"
+      - "prints()"
+      - "printf()"
+    code: |
+      package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"
+
+      require "Pktgen"
+
+      function info()
+          printf("Lua Version      : %s\n", pktgen.info.Lua_Version);
+          printf("Pktgen Version   : %s\n", pktgen.info.Pktgen_Version);
+          printf("Pktgen Copyright : %s\n", pktgen.info.Pktgen_Copyright);
+          prints("pktgen.info", pktgen.info);
+          printf("Port Count %d\n", pktgen.portCount());
+          printf("Total port Count %d\n", pktgen.totalPorts());
+      end
+
+      info()
+
+  # ── More Info / Status Query Example (lua.html) ──
+  - id: "more_info"
+    source_page: "lua.html"
+    description: "Print runtime data from a running pktgen instance"
+    api_functions_used:
+      - "pktgen.linkState()"
+      - "pktgen.isSending()"
+      - "pktgen.portSizes()"
+      - "pktgen.pktStats()"
+      - "pktgen.portStats()"
+      - "prints()"
+    code: |
+      package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"
+
+      require "Pktgen"
+
+      prints("linkState", pktgen.linkState("all"));
+      prints("isSending", pktgen.isSending("all"));
+      prints("portSizes", pktgen.portSizes("all"));
+      prints("pktStats", pktgen.pktStats("all"));
+      prints("portRates", pktgen.portStats("all", "rate"));
+      prints("portStats", pktgen.portStats('2', 'port'));
+
+  # ── Sequence via seq() (lua.html) ──
+  - id: "sequence_via_seq_function"
+    source_page: "lua.html"
+    description: "Set packet sequence using pktgen.seq() positional API"
+    api_functions_used:
+      - "pktgen.seq()"
+    code: |
+      pktgen.seq(0, "all", "0000:4455:6677", "0000:1234:5678", "10.11.0.1", "10.10.0.1/16", 5, 6, "ipv4", "udp", 1, 128);
+
+  # ── Sequence via seqTable() (lua.html, scripts.html) ──
+  - id: "sequence_via_seqTable"
+    source_page: "lua.html"
+    also_in: "scripts.html"
+    description: "Set packet sequence using pktgen.seqTable() with a Lua table"
+    api_functions_used:
+      - "pktgen.seqTable()"
+      - "pktgen.set()"
+    code: |
+      package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"
+
+      require "Pktgen"
+      local seq_table = {
+          ["eth_dst_addr"] = "0011:4455:6677",
+          ["eth_src_addr"] = "0011:1234:5678",
+          ["ip_dst_addr"] = "10.12.0.1",
+          ["ip_src_addr"] = "10.12.0.1/16",
+          ["sport"] = 9,
+          ["dport"] = 10,
+          ["ethType"] = "ipv4",
+          ["ipProto"] = "udp",
+          ["vlanid"] = 1,
+          ["pktSize"] = 128,
+          ["teid"] = 3,
+          ["cos"] = 5,
+          ["tos"] = 6,
+          ["tcp_flags"] = "fin,ack,cwr"
+      };
+      pktgen.seqTable(0, "all", seq_table);
+      pktgen.set("all", "seq_cnt", 4);
+
+  # ── .pkt File Example (scripts.html) ──
+  - id: "pkt_file_seq"
+    source_page: "scripts.html"
+    description: ".pkt command file format for setting a sequence"
+    format: ".pkt"
+    code: |
+      seq 0 all 0000:4455:6677 0000:1234:5678 10.11.0.1 10.10.0.1/16 5 6 ipv4 udp 1 128
+      set all seqCnt 1
+
+  # ── Startup with .pkt File (scripts.html) ──
+  - id: "startup_with_pkt_file"
+    source_page: "scripts.html"
+    description: "Invoking pktgen with a .pkt command file"
+    code: |
+      pktgen -l 0-4 -n 3 --proc-type auto --socket-mem 128,128 -- \
+                   -P -m "[1:3].0, [2:4].1" -f test/set_seq.pkt
+
+  # ── Main/Comprehensive Lua Example (lua.html) ──
+  - id: "main_comprehensive"
+    source_page: "lua.html"
+    description: "Comprehensive example showing most Lua API features"
+    api_functions_used:
+      - "pktgen.screen()"
+      - "pktgen.pause()"
+      - "pktgen.delay()"
+      - "pktgen.set()"
+      - "pktgen.rnd()"
+      - "pktgen.vlanid()"
+      - "pktgen.seq()"
+      - "pktgen.seqTable()"
+      - "pktgen.ports_per_page()"
+      - "pktgen.icmp_echo()"
+      - "pktgen.send_arp()"
+      - "pktgen.set_mac()"
+      - "pktgen.mac_from_arp()"
+      - "pktgen.set_ipaddr()"
+      - "pktgen.set_proto()"
+      - "pktgen.set_type()"
+      - "pktgen.ping4()"
+      - "pktgen.pcap()"
+      - "pktgen.start()"
+      - "pktgen.stop()"
+      - "pktgen.prime()"
+      - "pktgen.clear()"
+      - "pktgen.cls()"
+      - "pktgen.reset()"
+      - "pktgen.page()"
+      - "pktgen.range.*"
+      - "pktgen.port()"
+      - "pktgen.process()"
+      - "pktgen.blink()"
+      - "pktgen.set_range()"
+      - "pktgen.continue()"
+      - "pktgen.save()"
+      - "pktgen.load()"
+      - "pktgen.info.*"
+      - "pktgen.portCount()"
+      - "pktgen.totalPorts()"
+      - "printf()"
+      - "prints()"
+    code: |
+      package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"
+
+      require "Pktgen"
+
+      -- Screen control
+      pktgen.screen("off");
+      pktgen.pause("Screen off\n", 1000);
+      pktgen.screen("on");
+      pktgen.pause("Screen on\n", 1000);
+      pktgen.screen("off");
+      pktgen.pause("Screen off\n", 1000);
+
+      printf("delay for 1 second\n");
+      pktgen.delay(1000);
+      printf("done\n");
+
+      -- Per-port set commands
+      pktgen.set("all", "count", 100);
+      pktgen.set("all", "rate", 50);
+      pktgen.set("all", "size", 256);
+      pktgen.set("all", "burst", 128);
+      pktgen.set("all", "sport", 0x5678);
+      pktgen.set("all", "dport", 0x9988);
+      pktgen.set("all", "prime", 3);
+      pktgen.set("all", "seq_cnt", 3);
+
+      pktgen.rnd("all", 1, 20, "XX111000.. ..xx11");
+
+      pktgen.vlanid("all", 55);
+
+      pktgen.screen("on");
+      pktgen.pause("Screen on\n", 1000);
+      pktgen.screen("off");
+
+      -- Sequence commands
+      pktgen.seq(0, "all", "0000:4455:6677", "0000:1234:5678", "10.11.0.1", "10.10.0.1/16", 5, 6, "ipv4", "udp", 1, 128);
+
+      local seq_table = {
+          ["eth_dst_addr"] = "0011:4455:6677",
+          ["eth_src_addr"] = "0011:1234:5678",
+          ["ip_dst_addr"] = "10.12.0.1",
+          ["ip_src_addr"] = "10.12.0.1/16",
+          ["sport"] = 9,
+          ["dport"] = 10,
+          ["ethType"] = "ipv4",
+          ["ipProto"] = "udp",
+          ["vlanid"] = 1,
+          ["pktSize"] = 128
+      };
+      pktgen.seqTable(0, "all", seq_table);
+
+      -- Configuration commands
+      pktgen.ports_per_page(2);
+      pktgen.icmp_echo("all", "on");
+      pktgen.send_arp("all", "g");
+      pktgen.set_mac("0-2","src", "0001:1122:3344");
+      pktgen.set_mac("0-2", "dst","0002:1122:3344");
+      pktgen.mac_from_arp("on");
+      pktgen.set_ipaddr("0", "dst", "10.10.2.2");
+      pktgen.set_ipaddr("0", "src", "10.10.1.2/24");
+      pktgen.set_ipaddr("1", "dst", "10.10.2.2");
+      pktgen.set_ipaddr("1", "src", "10.10.2.2/24");
+      pktgen.set_proto("all", "udp");
+      pktgen.set_type("all", "ipv6");
+      pktgen.ping4("all");
+      pktgen.pcap("all", "on");
+      pktgen.ports_per_page(4);
+
+      -- Traffic control
+      pktgen.start("all");
+      pktgen.stop("all");
+      pktgen.prime("all");
+      pktgen.delay(1000);
+
+      pktgen.screen("on");
+      pktgen.clear("all");
+      pktgen.cls();
+      pktgen.reset("all");
+
+      -- Range commands
+      pktgen.pause("Do range commands\n", 1000);
+      pktgen.page("range");
+
+      pktgen.range.dst_mac("all", "start", "0011:2233:4455");
+      pktgen.range.src_mac("all", "start", "0033:2233:4455");
+
+      pktgen.delay(1000);
+      pktgen.range.dst_ip("all", "start", "10.12.0.1");
+      pktgen.range.dst_ip("all", "inc", "0.0.0.2");
+      pktgen.range.dst_ip("all", "min", "10.12.0.1");
+      pktgen.range.dst_ip("all", "max", "10.12.0.64");
+
+      pktgen.delay(1000);
+      pktgen.range.src_ip("all", "start", "10.13.0.1");
+      pktgen.range.src_ip("all", "inc", "0.0.0.3");
+      pktgen.range.src_ip("all", "min", "10.13.0.1");
+      pktgen.range.src_ip("all", "max", "10.13.0.64");
+
+      pktgen.delay(1000);
+      pktgen.range.dst_port("all", "start", 1234);
+      pktgen.range.dst_port("all", "inc", 4);
+      pktgen.range.dst_port("all", "min", 1234);
+      pktgen.range.dst_port("all", "max", 2345);
+
+      pktgen.delay(1000);
+      pktgen.range.src_port("all", "start", 5678);
+      pktgen.range.src_port("all", "inc", 5);
+      pktgen.range.src_port("all", "min", 1234);
+      pktgen.range.src_port("all", "max", 9999);
+
+      pktgen.delay(1000);
+      pktgen.range.vlan_id("all", "start", 1);
+      pktgen.range.vlan_id("all", "inc", 0);
+      pktgen.range.vlan_id("all", "min", 1);
+      pktgen.range.vlan_id("all", "max", 4094);
+
+      pktgen.delay(1000);
+      pktgen.range.pkt_size("all", "start", 128);
+      pktgen.range.pkt_size("all", "inc", 2);
+      pktgen.range.pkt_size("all", "min", 64);
+      pktgen.range.pkt_size("all", "max", 1518);
+
+      -- Navigate back and enable range
+      pktgen.pause("Wait a second, then go back to main page\n", 1000);
+      pktgen.page("0");
+      pktgen.pause("About to do range\n", 1000);
+      pktgen.set_range("all", "on");
+
+      pktgen.port(2);
+      pktgen.process("all", "on");
+      pktgen.blink("0", "on");
+      pktgen.pause("Pause for a while, then turn off screen\n", 4000);
+      pktgen.screen("off");
+
+      -- Final status and conditional save/load
+      printf("Lua Version      : %s\n", pktgen.info.Lua_Version);
+      printf("Pktgen Version   : %s\n", pktgen.info.Pktgen_Version);
+      printf("Pktgen Copyright : %s\n", pktgen.info.Pktgen_Copyright);
+
+      prints("pktgen.info", pktgen.info);
+
+      printf("Port Count %d\n", pktgen.portCount());
+      printf("Total port Count %d\n", pktgen.totalPorts());
+
+      printf("\nDone\n");
+      key = pktgen.continue("\nPress any key: ");
+      if ( key == "s" ) then
+          pktgen.set("all", "seq_cnt", 4);
+          pktgen.save("foobar.cmd");
+          pktgen.continue("Saved foobar.cmd, press key to load that file: ");
+          pktgen.load("foobar.cmd");
+      end
+
+  # ── Range CLI Examples (commands.html) ──
+  - id: "range_cli_examples"
+    source_page: "commands.html"
+    description: "CLI range command examples"
+    format: "CLI"
+    code: |
+      range 0 src mac start 00:00:00:00:00:00
+      range 0 dst mac max 00:12:34:56:78:90
+      range 0 src mac 00:00:00:00:00:00 00:00:00:00:00:00 00:12:34:56:78:90 00:00:00:01:01:01
+
+      range 0 dst ip start 0.0.0.0
+      range 0 dst ip min 0.0.0.0
+      range 0 dst ip max 1.2.3.4
+      range 0 dst ip inc 0.0.1.0
+      range 0 dst ip 0.0.0.0 0.0.0.0 1.2.3.4 0.0.1.0
+
+  # ── Socket Telnet Example (socket.html) ──
+  - id: "socket_telnet"
+    source_page: "socket.html"
+    description: "Connect to pktgen via telnet for remote Lua control"
+    code: |
+      telnet localhost 22022
+
+  # ── Socket Socat Interactive (socket.html) ──
+  - id: "socket_socat_interactive"
+    source_page: "socket.html"
+    description: "Connect to pktgen via socat with readline support"
+    code: |
+      socat -d -d READLINE TCP4:localhost:22022
+
+  # ── Socket Socat File Input (socket.html) ──
+  - id: "socket_socat_file"
+    source_page: "socket.html"
+    description: "Send a Lua script file via socat"
+    code: |
+      socat - TCP4:localhost:22022 < test/hello-world.lua
+
+  # ── Socket Remote Loadfile (socket.html) ──
+  - id: "socket_remote_loadfile"
+    source_page: "socket.html"
+    description: "Remote load and execute a Lua file"
+    code: |
+      socat READLINE TCP4:172.25.40.163:22022
+      f,e = loadfile("test/hello-world.lua")
+      f()
+
+  # ── Socket Piped Commands (socket.html) ──
+  - id: "socket_piped"
+    source_page: "socket.html"
+    description: "Pipe Lua commands via echo and socat"
+    code: |
+      echo "f,e = loadfile('test/hello-world.lua'); f();" | socat - TCP4:172.25.40.163:22022
+
+  # ── Startup Example (running.html) ──
+  - id: "startup_example"
+    source_page: "running.html"
+    description: "Basic pktgen startup command"
+    code: |
+      ./app/pktgen -l 0-4 -n 3 -- -P -m "[1:3].0, [2:4].1"
+
+  # ── EAL Full Example (usage_eal.html) ──
+  - id: "eal_full_example"
+    source_page: "usage_eal.html"
+    description: "Full EAL + Pktgen startup with blocklisting"
+    code: |
+      pktgen -l 0-4 -n 3 --proc-type auto --socket-mem 256,256
+                   -b 0000:03:00.0 -b 0000:03:00.1
+                    --file-prefix pg
+                   -- -P -m "[1:3].0, [2:4].1"
+
+  # ── Multiple Instance 1 (usage_pktgen.html) ──
+  - id: "multi_instance_1"
+    source_page: "usage_pktgen.html"
+    description: "First of two pktgen instances sharing hardware"
+    code: |
+      ./app/app/${target}/pktgen -l 2-11 -n 3 --proc-type auto \
+                 --socket-mem 512,512 --file-prefix pg1 \
+                 -b 09:00.0 -b 09:00.1 -b 83:00.1 -b 06:00.0 \
+                 -b 06:00.1 -b 08:00.0 -b 08:00.1 -- \
+                 -T -P -m "[4:6].0, [5:7].1, [8:10].2, [9:11].3" \
+                 -f themes/black-yellow.theme
+
+  # ── Multiple Instance 2 (usage_pktgen.html) ──
+  - id: "multi_instance_2"
+    source_page: "usage_pktgen.html"
+    description: "Second of two pktgen instances sharing hardware"
+    code: |
+      ./app/app/${target}/pktgen -l 2,4-11 -n 3 --proc-type auto \
+                 --socket-mem 512,512 --file-prefix pg2 \
+                 -b 09:00.0 -b 09:00.1 -b 83:00.1 -b 87:00.0 \
+                 -b 87:00.1 -b 89:00.0 -b 89:00.1 -- \
+                 -T -P -m "[12:16].0, [13:17].1, [14:18].2, [15:19].3" \
+                 -f themes/black-yellow.theme
+
+  # ── Default Run Config (getting_started.html) ──
+  - id: "default_cfg"
+    source_page: "getting_started.html"
+    description: "Default run.py configuration file"
+    format: "Python config"
+    code: |
+      # Setup configuration
+      setup = {
+       'devices': [
+           '81:00.0 81:00.1 81:00.2 81:00.3',
+           '85:00.0 85:00.1 85:00.2 85:00.3',
+           '83:00.0'
+           ],
+
+       'opts': [
+           '-b igb_uio'
+           ]
+       }
+
+      # Run command and options
+      run = {
+       'dpdk': [
+           '-l 1,1-5,10-13',
+           '-n 4',
+           '--proc-type auto',
+           '--log-level 7',
+           '--socket-mem 2048,2048',
+           '--file-prefix pg'
+           ],
+
+       'blocklist': [
+           '-b 81:00.0 -b 81:00.1',
+           '-b 85:00.0 -b 85:00.1',
+           '-b 83:00.0'
+           ],
+
+       'pktgen': [
+           '-T',
+           '-P',
+           '-m [2:3].0',
+           '-m [4:5].1',
+           '-m [10:11].2',
+           '-m [12:13].3',
+           ],
+
+       'misc': [
+           '-f themes/black-yellow.theme'
+          ]
+      }
+
+  # ── CLI Set Example (commands.html) ──
+  - id: "cli_set_seqcnt"
+    source_page: "commands.html"
+    description: "Set sequence count from CLI"
+    format: "CLI"
+    code: |
+      Pktgen:/> set all seq_cnt 1
+
+  # ── Hugepage Verification (getting_started.html) ──
+  - id: "hugepage_verification"
+    source_page: "getting_started.html"
+    description: "Verify hugepage support in kernel"
+    format: "Shell"
+    code: |
+      grep -i huge /boot/config-2.6.35-24-generic
+      grep -i huge /proc/meminfo
+
+  # ── Build Commands (getting_started.html) ──
+  - id: "build_commands"
+    source_page: "getting_started.html"
+    description: "Build DPDK and Pktgen from source"
+    format: "Shell"
+    code: |
+      # Build DPDK
+      export RTE_SDK=<DPDKInstallDir>
+      export RTE_TARGET=x86_64-native-linux-gcc
+      cd $RTE_SDK
+      make install T=x86_64-native-linux-gcc
+
+      # Build Pktgen
+      cd <PktgenInstallDir>
+      make
+
+  # ── Run.py Commands (getting_started.html) ──
+  - id: "run_py_commands"
+    source_page: "getting_started.html"
+    description: "Run setup and launch pktgen via run.py"
+    format: "Shell"
+    code: |
+      cd <PktgenInstallDir>/tools
+      ./run.py -s default    # setup system using cfg/default.cfg
+      ./run.py default       # run pktgen using cfg/default.cfg
