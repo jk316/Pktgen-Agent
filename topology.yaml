@@ -3,6 +3,10 @@
 # Edit this file to match your hardware setup.
 # All skills reference ports by logical name (e.g. $topology.tx_port).
 
+pktgen:
+  host: "10.99.80.222"
+  port: 22022
+
 tx_port:
   portlist: "0"
   description: "TX port — traffic egress"
