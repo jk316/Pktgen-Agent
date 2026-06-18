@@ -2,29 +2,42 @@
 Pktgen TCP Socket Client
 Connects to a running Pktgen instance via TCP port 22022 (0x5606).
 Sends Lua code and returns the response.
+Default host/port are read from topology.yaml (pktgen.host / pktgen.port).
 
 Reference: knowledge/socket.html
-  - telnet localhost 22022
-  - socat -d -d READLINE TCP4:localhost:22022
-  - socat - TCP4:localhost:22022 < test/hello-world.lua
 """
 
 import socket
-import time
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-PKTGEN_DEFAULT_HOST = "localhost"
-PKTGEN_DEFAULT_PORT = 22022  # 0x5606
 DEFAULT_TIMEOUT = 10.0
 BUFFER_SIZE = 65536
+
+
+def _load_topology_config():
+    """Read pktgen host/port from topology.yaml. Returns (host, port)."""
+    topology_path = Path(__file__).resolve().parent / "topology.yaml"
+    try:
+        import yaml
+        with open(topology_path) as f:
+            data = yaml.safe_load(f)
+        cfg = data.get("pktgen", {})
+        return cfg.get("host", "localhost"), cfg.get("port", 22022)
+    except Exception:
+        return "localhost", 22022
 
 
 class PktgenClient:
     """TCP client for communicating with a running Pktgen instance."""
 
-    def __init__(self, host=PKTGEN_DEFAULT_HOST, port=PKTGEN_DEFAULT_PORT, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, host=None, port=None, timeout=DEFAULT_TIMEOUT):
+        if host is None or port is None:
+            default_host, default_port = _load_topology_config()
+            host = host or default_host
+            port = port or default_port
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -99,14 +112,14 @@ class PktgenClient:
         return False
 
 
-def execute_lua(host: str, port: int, lua_code: str, timeout: float = DEFAULT_TIMEOUT) -> str:
+def execute_lua(lua_code: str, host: str = None, port: int = None, timeout: float = DEFAULT_TIMEOUT) -> str:
     """
     Convenience function: connect, execute Lua, disconnect.
 
     Args:
-        host: Pktgen hostname or IP
-        port: Pktgen TCP port (default 22022)
         lua_code: Lua code to execute
+        host: Pktgen hostname or IP (default: from topology.yaml)
+        port: Pktgen TCP port (default: from topology.yaml)
         timeout: Socket timeout in seconds
 
     Returns:
