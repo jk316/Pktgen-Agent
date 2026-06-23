@@ -151,7 +151,10 @@ class SkillCompiler:
         elif value is None:
             return "nil"
         else:
-            return f'"{value}"'
+            raise CompileError(
+                f"Cannot convert value to Lua literal: {value!r} (type: {type(value).__name__}). "
+                f"This usually means the parameter value is malformed — check the input."
+            )
 
     def compile_step(self, step: Dict, user_params: Dict, skill: Dict) -> List[str]:
         """Compile a single DSL step into one or more Lua lines."""
@@ -297,6 +300,8 @@ class SkillCompiler:
                 constraints = p.get("constraints", {})
 
                 # Type check
+                if ptype == "boolean" and not isinstance(val, bool):
+                    raise CompileError(f"Parameter '{pname}' must be boolean (true/false), got {type(val).__name__}: {val!r}")
                 if ptype == "integer" and not isinstance(val, int):
                     raise CompileError(f"Parameter '{pname}' must be integer, got {type(val).__name__}")
                 if ptype == "float" and not isinstance(val, (int, float)):
