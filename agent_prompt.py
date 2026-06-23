@@ -5,9 +5,36 @@ Used with LangChain's create_react_agent or similar ReAct implementations.
 Import this in your agent setup:
     from agent_prompt import SYSTEM_PROMPT
     agent = create_react_agent(llm, tools, SYSTEM_PROMPT)
+
+The tool table in SYSTEM_PROMPT is auto-generated from dsl/skills/*.yaml at import time,
+so it always stays in sync with the skill definitions.
 """
 
-SYSTEM_PROMPT = """You are a Pktgen Traffic Generator Controller. You control a DPDK-based packet
+import yaml
+from pathlib import Path
+
+
+def _build_tool_table() -> str:
+    """Generate the tool table from skill YAML files. Always up to date."""
+    skills_dir = Path(__file__).resolve().parent / "dsl" / "skills"
+    rows = []
+    for skill_file in sorted(skills_dir.glob("*.yaml")):
+        with open(skill_file) as f:
+            data = yaml.safe_load(f)
+        skill = data.get("skill", data)
+        name = skill["name"]
+        desc = skill.get("description", "")
+        params = skill.get("params", [])
+        # Show required params first, then optional
+        required = [p["name"] for p in params if p.get("required")]
+        optional = [p["name"] for p in params if not p.get("required")]
+        param_str = ", ".join(required + optional)
+        rows.append(f"| {name} | {desc} | {param_str} |")
+    header = "| Tool | Purpose | Key Parameters |\n|------|---------|---------------|"
+    return header + "\n" + "\n".join(rows)
+
+
+SYSTEM_PROMPT = f"""You are a Pktgen Traffic Generator Controller. You control a DPDK-based packet
 generator by selecting and executing predefined skills. Each skill compiles to Lua
 code and runs on the Pktgen instance via TCP socket (port 22022).
 
@@ -19,17 +46,7 @@ correct Lua.
 
 ## Available Tools
 
-| Tool | Purpose | Key Parameters |
-|------|---------|---------------|
-| udp_flood | Send UDP packets at high rate | rate, pktSize, count, sport, dport |
-| tcp_flood | Send TCP packets at high rate | rate, pktSize, count, sport, dport, tcp_flags |
-| icmp_flood | Send ICMP Echo Request flood | rate, pktSize, count, ttl |
-| arp_flood | Send ARP request/gratuitous packets | arp_type (request/gratuitous), rate, count |
-| pcap_replay | Replay packets from a PCAP file | pcap_file, rate, count |
-| packet_sequence_generation | Send a sequence of different packet templates | sequences (list of packet tables) |
-| range_based_scan | Vary a field across a range (IP/port/MAC/VLAN) | scan_field, start, min, max, inc, rate |
-| stats_monitoring | Poll and display port statistics | interval_ms, iterations, mode |
-| safe_stop_and_reset | Stop all traffic and reset ports | save_config, clear_stats, reset_ports |
+{_build_tool_table()}
 
 ## Port Topology
 
@@ -93,17 +110,4 @@ After each tool call, report:
 
 def get_skill_summaries() -> str:
     """Generate a compact tool list from skill files (used for dynamic prompt generation)."""
-    import yaml
-    from pathlib import Path
-
-    skills_dir = Path(__file__).resolve().parent / "dsl" / "skills"
-    lines = []
-    for skill_file in sorted(skills_dir.glob("*.yaml")):
-        with open(skill_file) as f:
-            data = yaml.safe_load(f)
-        skill = data.get("skill", data)
-        name = skill["name"]
-        desc = skill.get("description", "")
-        params = [p["name"] for p in skill.get("params", [])]
-        lines.append(f"  - {name}: {desc} (params: {', '.join(params)})")
-    return "\n".join(lines)
+    return _build_tool_table()

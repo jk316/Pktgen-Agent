@@ -5,15 +5,50 @@
 skill:
   name: "icmp_flood"
   intent: "traffic_generation"
-  description: "Configure ports and send an ICMP Echo Request flood at a specified rate, packet size, and count. ICMP has no port numbers — the API uses icmp_echo/ping4 instead of sport/dport."
+  description: "Configure ports and send an ICMP Echo Request flood to a specified destination at a configurable rate, packet size, and count. ICMP has no port numbers — uses TTL instead of sport/dport."
 
   params:
+    # ── 必需参数 ──
     - name: "rate"
       type: "float"
       description: "Packet rate in percentage (0-100)"
       required: true
       constraints: { min: 0, max: 100 }
 
+    # ── L3 寻址 ──
+    - name: "dst_ip"
+      type: "ip_address"
+      description: "Destination IP address"
+      required: false
+      default: '"10.10.10.2"'
+
+    - name: "src_ip"
+      type: "string"
+      description: "Source IP address (CIDR format, e.g. 192.168.1.1/24)"
+      required: false
+      default: '"192.168.1.1/24"'
+
+    # ── L2 寻址 ──
+    - name: "dst_mac"
+      type: "string"
+      description: "Destination MAC address (format: XX:XX:XX:XX:XX:XX)"
+      required: false
+      default: '"00:00:00:00:00:01"'
+
+    - name: "src_mac"
+      type: "string"
+      description: "Source MAC address (format: XX:XX:XX:XX:XX:XX)"
+      required: false
+      default: '"00:00:00:00:00:02"'
+
+    # ── ICMP 特有 ──
+    - name: "ttl"
+      type: "integer"
+      description: "IP TTL value"
+      required: false
+      default: 64
+
+    # ── 流量控制 ──
     - name: "pktSize"
       type: "integer"
       description: "Packet size in bytes"
@@ -33,12 +68,6 @@ skill:
       required: false
       default: 128
 
-    - name: "ttl"
-      type: "integer"
-      description: "IP TTL value"
-      required: false
-      default: 64
-
   topology:
     tx_port:
       portlist: "0"
@@ -56,6 +85,22 @@ skill:
     - comment: "Set protocol to ICMP"
       api: "pktgen.set_proto"
       args: ["$topology.tx_port", '"icmp"']
+
+    - comment: "Set destination IP address"
+      api: "pktgen.set_ipaddr"
+      args: ["$topology.tx_port", '"dst"', "$params.dst_ip"]
+
+    - comment: "Set source IP address"
+      api: "pktgen.set_ipaddr"
+      args: ["$topology.tx_port", '"src"', "$params.src_ip"]
+
+    - comment: "Set destination MAC address"
+      api: "pktgen.set_mac"
+      args: ["$topology.tx_port", '"dst"', "$params.dst_mac"]
+
+    - comment: "Set source MAC address"
+      api: "pktgen.set_mac"
+      args: ["$topology.tx_port", '"src"', "$params.src_mac"]
 
     - comment: "Enable ICMP Echo on port"
       api: "pktgen.icmp_echo"
