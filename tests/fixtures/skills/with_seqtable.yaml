@@ -1,0 +1,24 @@
+skill:
+  name: "with_seqtable"
+  intent: "packet_crafting"
+  description: "Tests seqTable compilation with table_data"
+  params:
+    - name: "rate"
+      type: "float"
+      required: true
+      constraints: { min: 0, max: 100 }
+  plan:
+    - comment: "Define packet sequence"
+      api: "pktgen.seqTable"
+      args: ["0", "$topology.tx_port"]
+      kw_args:
+        table_name: "pkt_table"
+      table_data:
+        eth_dst_addr: "00:11:22:33:44:55"
+        ip_dst_addr: "10.0.0.1"
+        sport: 1234
+        dport: 5678
+        pktSize: 512
+    - comment: "Enable sequence"
+      api: "pktgen.set"
+      args: ["$topology.tx_port", '"seq_cnt"', "1"]

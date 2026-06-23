@@ -1,0 +1,36 @@
+valid_apis:
+  configuration:
+    - "pktgen.set"
+    - "pktgen.set_mac"
+    - "pktgen.set_ipaddr"
+  traffic_control:
+    - "pktgen.start"
+    - "pktgen.stop"
+  state_management:
+    - "pktgen.clear"
+    - "pktgen.reset"
+    - "pktgen.save"
+  ui_control:
+    - "pktgen.screen"
+  flow_control:
+    - "pktgen.delay"
+  range:
+    - "pktgen.range.dst_ip"
+    - "pktgen.range.src_ip"
+    - "pktgen.range.dst_port"
+  packet_construction:
+    - "pktgen.seqTable"
+  protocol:
+    - "pktgen.send_arp"
+  monitoring:
+    - "pktgen.portStats"
+    - "pktgen.portCount"
+
+valid_set_keys:
+  - { key: "count", type: "integer" }
+  - { key: "rate", type: "float" }
+  - { key: "size", type: "integer" }
+  - { key: "burst", type: "integer" }
+  - { key: "sport", type: "integer" }
+  - { key: "dport", type: "integer" }
+  - { key: "ttl", type: "integer" }

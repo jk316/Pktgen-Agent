@@ -1,0 +1,24 @@
+skill:
+  name: "minimal_skill"
+  intent: "traffic_generation"
+  description: "A minimal skill for compiler testing"
+  params:
+    - name: "rate"
+      type: "float"
+      required: true
+      constraints: { min: 0, max: 100 }
+  setup:
+    - comment: "Screen off"
+      api: "pktgen.screen"
+      args: ['"off"']
+  plan:
+    - comment: "Set rate"
+      api: "pktgen.set"
+      args: ["$topology.tx_port", '"rate"', "$params.rate"]
+    - comment: "Start"
+      api: "pktgen.start"
+      args: ["$topology.tx_port"]
+  teardown:
+    - comment: "Screen on"
+      api: "pktgen.screen"
+      args: ['"on"']

@@ -1,0 +1,19 @@
+skill:
+  name: "with_assign"
+  intent: "monitoring"
+  description: "Tests variable assignment in steps"
+  params:
+    - name: "interval_ms"
+      type: "integer"
+      required: false
+      default: 1000
+  plan:
+    - comment: "Get port count"
+      api: "pktgen.portCount"
+      assign_to: "port_count"
+    - comment: "Delay then get stats"
+      api: "pktgen.delay"
+      args: ["$params.interval_ms"]
+    - comment: "Get port stats"
+      api: "pktgen.portStats"
+      args: ["$topology.tx_port", '"port"']

@@ -1,0 +1,23 @@
+skill:
+  name: "required_only"
+  intent: "traffic_generation"
+  description: "All params are required, no defaults"
+  params:
+    - name: "rate"
+      type: "float"
+      required: true
+      constraints: { min: 0, max: 100 }
+    - name: "pkt_size"
+      type: "integer"
+      required: true
+      constraints: { min: 64, max: 1518 }
+  plan:
+    - comment: "Set size and rate"
+      api: "pktgen.set"
+      args: ["$topology.tx_port", '"size"', "$params.pkt_size"]
+    - comment: "Set rate"
+      api: "pktgen.set"
+      args: ["$topology.tx_port", '"rate"', "$params.rate"]
+    - comment: "Start"
+      api: "pktgen.start"
+      args: ["$topology.tx_port"]

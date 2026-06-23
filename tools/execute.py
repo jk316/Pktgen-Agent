@@ -10,13 +10,18 @@ Usage:
     # tools is a list of langchain_core.tools.BaseTool
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import yaml
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Type
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from dataclasses import dataclass
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 # Ensure compiler is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

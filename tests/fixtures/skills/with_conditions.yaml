@@ -1,0 +1,29 @@
+skill:
+  name: "with_conditions"
+  intent: "traffic_generation"
+  description: "Tests conditional step compilation"
+  params:
+    - name: "save_config"
+      type: "boolean"
+      required: false
+      default: false
+    - name: "rate"
+      type: "float"
+      required: true
+      constraints: { min: 0, max: 100 }
+    - name: "enable_log"
+      type: "boolean"
+      required: false
+      default: true
+  plan:
+    - comment: "Start traffic"
+      api: "pktgen.start"
+      args: ["$topology.tx_port"]
+    - comment: "Save configuration if requested"
+      condition: "$params.save_config == true"
+      api: "pktgen.save"
+      args: ["$params.config_file"]
+    - comment: "Log status if enabled"
+      condition: "$params.enable_log == true"
+      api: "pktgen.portStats"
+      args: ["$topology.tx_port"]

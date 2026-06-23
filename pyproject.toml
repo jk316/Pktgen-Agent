@@ -1,0 +1,12 @@
+[project]
+name = "pktgen-agent"
+version = "0.1.0"
+description = "AI agent controller for Pktgen-DPDK"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: Unit tests (no I/O beyond mocked filesystem)",
+    "slow: Tests that would hit network if improperly mocked",
+    "langchain: Tests requiring langchain-core + pydantic",
+]

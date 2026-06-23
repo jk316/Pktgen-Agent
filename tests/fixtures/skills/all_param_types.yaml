@@ -1,0 +1,35 @@
+skill:
+  name: "all_param_types"
+  intent: "traffic_generation"
+  description: "Tests boolean, integer, float, string, and enum params"
+  params:
+    - name: "enable_log"
+      type: "boolean"
+      required: false
+      default: false
+    - name: "count"
+      type: "integer"
+      required: false
+      default: 100
+      constraints: { min: 1, max: 10000 }
+    - name: "rate"
+      type: "float"
+      required: true
+      constraints: { min: 0, max: 100 }
+    - name: "target_ip"
+      type: "ip_address"
+      required: false
+      default: "192.168.1.1"
+    - name: "proto"
+      type: "enum"
+      required: false
+      default: "udp"
+      constraints:
+        enum: ["udp", "tcp", "icmp"]
+  plan:
+    - comment: "Set params"
+      api: "pktgen.set"
+      args: ["$topology.tx_port", '"count"', "$params.count"]
+    - comment: "Start traffic"
+      api: "pktgen.start"
+      args: ["$topology.tx_port"]

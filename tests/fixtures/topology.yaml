@@ -1,0 +1,15 @@
+pktgen:
+  host: "testhost"
+  port: 22099
+
+tx_port:
+  portlist: "0"
+  description: "TX"
+
+rx_port:
+  portlist: "1"
+  description: "RX"
+
+monitor_port:
+  portlist: "all"
+  description: "Monitor"

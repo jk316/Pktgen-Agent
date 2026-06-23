@@ -1,0 +1,24 @@
+skill:
+  name: "with_repeat"
+  intent: "traffic_generation"
+  description: "Tests repeat loop compilation"
+  params:
+    - name: "rate"
+      type: "float"
+      required: true
+      constraints: { min: 0, max: 100 }
+    - name: "iterations"
+      type: "integer"
+      required: false
+      default: 5
+    - name: "interval_ms"
+      type: "integer"
+      required: false
+      default: 1000
+  plan:
+    - comment: "Repeat stats polling"
+      api: "pktgen.portStats"
+      args: ["$topology.tx_port"]
+      repeat:
+        count: "$params.iterations"
+        interval_ms: "$params.interval_ms"
