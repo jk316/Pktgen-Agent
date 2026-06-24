@@ -18,7 +18,7 @@ skill:
       type: "string"
       description: "Filename for saving configuration (only used if save_config is true)"
       required: false
-      default: '"backup.cmd"'
+      default: "backup.cmd"
 
     - name: "clear_stats"
       type: "boolean"
