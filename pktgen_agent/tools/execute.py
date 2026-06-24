@@ -21,7 +21,7 @@ from typing import Any, Callable, Dict, List, Optional
 import yaml
 
 from pktgen_agent.compiler.compile import CompileError, SkillCompiler
-from pktgen_agent.client import PktgenConnectionError, execute_lua
+from pktgen_agent.client import PktgenClient, PktgenConnectionError, execute_lua
 
 logger = logging.getLogger(__name__)
 
@@ -108,12 +108,11 @@ def execute_skill_live(
 ) -> dict[str, Any]:
     """Compile skill and execute against a running Pktgen instance via TCP."""
     lua_code = compiler.compile(skill_name, params)
-    _save_lua_script(skill_name, lua_code, "live")
     try:
-        response = execute_lua(
-            lua_code=lua_code, host=host, port=port, timeout=timeout
-        )
-        logger.info("Live execution succeeded: skill=%s", skill_name)
+        with PktgenClient(host=host, port=port, timeout=timeout) as client:
+            _save_lua_script(skill_name, lua_code, "live")
+            response = client.execute(lua_code)
+            logger.info("Live execution succeeded: skill=%s", skill_name)
         return {
             "success": True,
             "skill": skill_name,
