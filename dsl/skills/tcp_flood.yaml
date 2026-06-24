@@ -80,6 +80,12 @@ skill:
       required: false
       default: 128
 
+    - name: "duration"
+      type: "integer"
+      description: "Traffic duration in MILLISECONDS (0 = run forever). Example: 100s → 100000"
+      required: false
+      default: 0
+
   topology:
     tx_port:
       portlist: "0"
@@ -143,10 +149,24 @@ skill:
       api: "pktgen.start"
       args: ["$topology.tx_port"]
 
-  teardown:
-    - comment: "Stop all traffic"
+    - comment: "Wait for duration (seconds → milliseconds)"
+      api: "pktgen.delay"
+      args: ["$params.duration"]
+      condition: "$params.duration > 0"
+      # The value is in seconds; the Lua literal will be used directly.
+      # (Pktgen.delay takes milliseconds, but since the user thinks in
+      # seconds, the agent will multiply before passing the param.)
+
+    - comment: "Stop after timed duration"
       api: "pktgen.stop"
       args: ["$topology.tx_port"]
+      condition: "$params.duration > 0"
+
+  teardown:
+    - comment: "Stop all traffic (only if not already stopped by duration timer)"
+      api: "pktgen.stop"
+      args: ["$topology.tx_port"]
+      condition: "$params.duration == 0"
 
     - comment: "Re-enable screen updates"
       api: "pktgen.screen"
