@@ -115,25 +115,36 @@ class SkillCompiler:
             )
 
     def resolve_topology(self, value: str) -> str:
-        """Replace $topology.<name> with physical portlist.
+        """Replace $topology.<name> with a Lua-quoted portlist literal.
 
-        The resolved value is wrapped as a Lua literal (e.g. ``all`` → ``"all"``,
-        ``0`` → ``"0"``) so Pktgen APIs that expect string port references
-        (like ``pktgen.stop("all")``) receive valid Lua.
+        Handles two patterns:
+
+        1. Bare reference — ``$topology.tx_port`` → ``"0"``
+           (the entire arg is the topology key, needs quoting).
+
+        2. Already-quoted reference — ``"$topology.monitor_port"`` →
+           ``"all"`` (the surrounding quotes are part of the arg string;
+           we replace the whole ``"$topology.xxx"`` token so we don't
+           produce double-quoted garbage like ``""all""``).
         """
-        pattern = r"\$topology\.(\w+)"
+        portlist = self.topology  # cached after first access
 
-        def replacer(match: re.Match) -> str:
-            name = match.group(1)
-            if name not in self.topology:
+        def _resolve(m: re.Match) -> str:
+            name = m.group(1)
+            if name not in portlist:
                 raise CompileError(
                     f"Undefined topology reference: '{name}'. "
-                    f"Available: {list(self.topology.keys())}"
+                    f"Available: {list(portlist.keys())}"
                 )
-            raw = self.topology[name]["portlist"]
-            return self._to_lua_literal(raw)
+            return self._to_lua_literal(portlist[name]["portlist"])
 
-        return re.sub(pattern, replacer, value)
+        # ── Step 1: replace already-quoted references ──
+        # "$topology.<name>" → the surrounding " are consumed, _to_lua_literal re-adds them.
+        value = re.sub(r'"\$topology\.(\w+)"', _resolve, value)
+
+        # ── Step 2: replace bare references ──
+        # $topology.<name> → _to_lua_literal adds quotes.
+        return re.sub(r'\$topology\.(\w+)', _resolve, value)
 
     def resolve_params(
         self, value: str, user_params: dict, skill_params: list[dict]
@@ -268,6 +279,30 @@ class SkillCompiler:
 
         return self._indent(lines, step)
 
+    def _parse_phase(self, phase: list | dict) -> tuple[dict | None, list[dict]]:
+        """Parse a phase definition, supporting both list and dict formats.
+
+        List format (backward compatible)::
+
+            plan:
+              - api: ...
+              - api: ...
+
+        Dict format (with phase-level repeat)::
+
+            plan:
+              repeat: {count: "$params.iterations", interval_ms: 1000}
+              steps:
+                - api: ...
+                - api: ...
+
+        Returns:
+            (phase_repeat or None, list of step dicts).
+        """
+        if isinstance(phase, dict):
+            return phase.get("repeat"), phase.get("steps", [])
+        return None, phase if isinstance(phase, list) else []
+
     def _indent(self, lines: list[str], step: dict) -> list[str]:
         """Apply indentation if inside a condition block."""
         if "condition" in step:
@@ -280,16 +315,45 @@ class SkillCompiler:
         user_params: dict,
         skill: dict,
         phase_name: str,
+        phase_repeat: dict | None = None,
     ) -> list[str]:
-        """Compile a list of steps (setup/plan/teardown)."""
+        """Compile a list of steps (setup/plan/teardown).
+
+        Args:
+            steps: List of step dicts.
+            user_params: User-supplied parameter values.
+            skill: Full skill dict (for param defaults).
+            phase_name: Phase label for comments.
+            phase_repeat: Optional repeat config for the entire phase
+                          (``{"count": 10, "interval_ms": 1000}``).
+                          When set, ALL steps in the phase are wrapped in
+                          a single ``for`` loop so monitoring/repeated
+                          operations collect fresh data each iteration.
+        """
         lua_lines: list[str] = []
         if not steps:
             return lua_lines
 
         lua_lines.append(f"-- [{phase_name}]")
+
+        # ── Phase-level repeat ──
+        if phase_repeat:
+            count = phase_repeat.get("count", 1)
+            interval = phase_repeat.get("interval_ms", 0)
+
+            count_str = str(count)
+            count_str = self.resolve_params(
+                count_str, user_params, skill.get("params", [])
+            )
+            try:
+                count = int(count_str)
+            except ValueError:
+                count = 1
+
+            lua_lines.append(f"for i = 1, {count} do")
+
         for step in steps:
-            # Handle repeat — use .get() instead of .pop() to avoid mutating
-            # the caller's dict (fixes silent data loss on re-compilation).
+            # Handle step-level repeat
             if "repeat" in step:
                 repeat_cfg = step.get("repeat", {})
                 count = repeat_cfg.get("count", 1)
@@ -315,7 +379,22 @@ class SkillCompiler:
                     lua_lines.append(f"    pktgen.delay({interval_str});")
                 lua_lines.append("end")
             else:
-                lua_lines.extend(self.compile_step(step, user_params, skill))
+                inner = self.compile_step(step, user_params, skill)
+                if phase_repeat:
+                    lua_lines.extend([f"    {l}" for l in inner])
+                else:
+                    lua_lines.extend(inner)
+
+        # Close phase-level repeat
+        if phase_repeat:
+            if phase_repeat.get("interval_ms", 0):
+                interval_str = self.resolve_params(
+                    str(phase_repeat.get("interval_ms", 0)),
+                    user_params,
+                    skill.get("params", []),
+                )
+                lua_lines.append(f"    pktgen.delay({interval_str});")
+            lua_lines.append("end")
 
         return lua_lines
 
@@ -417,23 +496,29 @@ class SkillCompiler:
         lua.append("")
 
         # Setup
+        setup_phase = skill.get("setup", [])
+        setup_repeat, setup_steps = self._parse_phase(setup_phase)
         lua.extend(
-            self.compile_phase(skill.get("setup", []), user_params, skill, "setup")
+            self.compile_phase(setup_steps, user_params, skill, "setup", setup_repeat)
         )
-        if skill.get("setup"):
+        if setup_steps:
             lua.append("")
 
         # Plan
+        plan_phase = skill.get("plan", [])
+        plan_repeat, plan_steps = self._parse_phase(plan_phase)
         lua.extend(
-            self.compile_phase(skill.get("plan", []), user_params, skill, "plan")
+            self.compile_phase(plan_steps, user_params, skill, "plan", plan_repeat)
         )
-        if skill.get("plan"):
+        if plan_steps:
             lua.append("")
 
         # Teardown
+        teardown_phase = skill.get("teardown", [])
+        teardown_repeat, teardown_steps = self._parse_phase(teardown_phase)
         lua.extend(
             self.compile_phase(
-                skill.get("teardown", []), user_params, skill, "teardown"
+                teardown_steps, user_params, skill, "teardown", teardown_repeat
             )
         )
 
