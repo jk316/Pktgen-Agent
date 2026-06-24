@@ -154,17 +154,11 @@ skill:
     args:
     - $params.duration
     condition: $params.duration > 0
-  - comment: Stop after timed duration
-    api: pktgen.stop
-    args:
-    - $topology.tx_port
-    condition: $params.duration > 0
   teardown:
   - comment: Stop all traffic
     api: pktgen.stop
     args:
     - $topology.tx_port
-    condition: $params.duration == 0
   - comment: Re-enable screen updates
     api: pktgen.screen
     args:
