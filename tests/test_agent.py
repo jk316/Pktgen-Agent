@@ -1,19 +1,15 @@
 """
-Unit tests for agent.py — dependency checks, env loading, topology reading.
-
-Excludes: main() (interactive loop), create_agent() (requires LLM), get_llm() (requires API key).
+Unit tests for pktgen_agent.agent — dependency checks, env loading, topology reading.
 """
 
 import os
-import sys
 from pathlib import Path
 
 import pytest
 
-_project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_project_root))
-
-from agent import check_dependencies, _load_dotenv, _load_topology_config
+from pktgen_agent.agent import check_dependencies
+from pktgen_agent.config import load_dotenv
+from pktgen_agent.topology import load_topology_config
 
 
 # ── TestCheckDependencies ──
@@ -21,7 +17,7 @@ from agent import check_dependencies, _load_dotenv, _load_topology_config
 
 class TestCheckDependencies:
     def test_returns_true_when_all_installed(self):
-        """pyyaml, langchain-core, langchain, langchain-openai — skip some envs."""
+        """pyyaml, langchain-core, langchain, langchain-openai, pydantic."""
         ok, msg = check_dependencies()
         if not ok:
             pytest.skip(f"Required packages not installed in this env: {msg}")
@@ -32,7 +28,6 @@ class TestCheckDependencies:
         original_import = __import__
 
         def mock_import(name, *args, **kwargs):
-            # check_dependencies uses import_name "yaml" for package "pyyaml"
             if name == "yaml":
                 raise ImportError("No module named 'yaml'")
             return original_import(name, *args, **kwargs)
@@ -46,7 +41,7 @@ class TestCheckDependencies:
         original_import = __import__
 
         def mock_import(name, *args, **kwargs):
-            if name == "langchain":
+            if name == "langchain.agents":
                 raise ImportError("nope")
             return original_import(name, *args, **kwargs)
 
@@ -58,7 +53,7 @@ class TestCheckDependencies:
         original_import = __import__
 
         def mock_import(name, *args, **kwargs):
-            if name in ("langchain_core", "langchain"):
+            if name in ("langchain_core", "langchain.agents"):
                 raise ImportError(f"No module named '{name}'")
             return original_import(name, *args, **kwargs)
 
@@ -73,72 +68,15 @@ class TestCheckDependencies:
 
 
 class TestLoadDotenv:
-    def test_loads_key_value(self, tmp_path, monkeypatch):
-        env_file = tmp_path / ".env"
-        env_file.write_text("TEST_KEY=test_value\n")
-        monkeypatch.setattr("agent.Path.__init__", lambda self: None, raising=False)
-        # Use monkeypatch to redirect the .env path
-        import agent
-        monkeypatch.setattr(agent.Path, "resolve", lambda self: self)
-        # Actually best approach: write .env and use _load_dotenv via a controlled path
-        # Simpler: test the manual parsing branch directly
-        monkeypatch.setattr("agent.Path.__init__", lambda *a, **kw: None, raising=False)
-        # Too complex — let me test directly
+    def test_does_not_crash_on_missing_file(self):
+        """load_dotenv should not crash when .env doesn't exist."""
+        load_dotenv(env_path=Path("/nonexistent/.env"))  # safe no-op
 
-    def test_handles_missing_file(self, monkeypatch, tmp_path):
-        """_load_dotenv should not crash when .env doesn't exist."""
-        # Create a temp dir without .env
-        import agent
-
-        def fake_resolve(self):
-            return tmp_path / ".env"
-
-        monkeypatch.setattr(agent.Path, "resolve", fake_resolve)
-        _load_dotenv()  # should not raise
-
-    def test_skips_comments(self, tmp_path):
-        import agent
-        env_file = tmp_path / "test.env"
-        env_file.write_text("# comment\nKEY=val\n")
-        monkeypatch = pytest.MonkeyPatch()
-
-        # Use the fallback parser directly by mocking the Path
-        # Simpler approach: test that os.environ gets the right value
-        # Actually let me just test the manual parsing via the fallback branch
-        pass
-
-    def test_skips_blank_lines(self):
-        """Fallback parser skips empty/blank lines."""
-        import agent
-        # The manual parser logic:
-        # if not line or line.startswith("#") or "=" not in line: continue
-        # Test "  " → stripped is "" → skipped
-        assert "" == ""
-        # "=onlykey" → has "=" → key="" (edge case)
-        # This is just documenting the behavior — no crash
-        pass
-
-    def test_does_not_overwrite_existing(self, tmp_path, monkeypatch):
-        """Existing os.environ values should not be overwritten."""
-        os.environ["AGENT_TEST_EXISTING"] = "original"
-        env_file = tmp_path / ".env"
-        env_file.write_text('AGENT_TEST_EXISTING=new\n')
-
-        def fake_path(*args, **kwargs):
-            return env_file
-        monkeypatch.setattr("agent.Path", fake_path, raising=False)
-
-        # Because _load_dotenv uses dotenv first, it would overwrite.
-        # Just verify the fallback parser's guard:
-        #   if key not in os.environ: os.environ[key] = value
-        # Clean up
-        del os.environ["AGENT_TEST_EXISTING"]
-
-    def test_strips_quotes(self, tmp_path):
+    def test_strips_quotes(self):
         """Fallback parser strips double and single quotes."""
-        import agent
+        import pktgen_agent.config as cfg
 
-        # Simulate the manual parsing:
+        # Simulate the manual parsing logic
         value = '"quoted_value"'
         value = value.strip().strip('"').strip("'")
         assert value == "quoted_value"
@@ -147,20 +85,36 @@ class TestLoadDotenv:
         value2 = value2.strip().strip('"').strip("'")
         assert value2 == "single_quoted"
 
+    def test_does_not_overwrite_existing(self, tmp_path):
+        """Existing os.environ values should not be overwritten by fallback parser."""
+        os.environ["PYTEST_TEST_EXISTING"] = "original"
+        env_file = tmp_path / ".env"
+        env_file.write_text('PYTEST_TEST_EXISTING=new\n')
+        load_dotenv(env_path=env_file)
+        # Manual parser should not overwrite
+        assert os.environ["PYTEST_TEST_EXISTING"] == "original"
+        del os.environ["PYTEST_TEST_EXISTING"]
+
+    def test_skips_comments_and_blank(self, tmp_path):
+        """Fallback parser skips comments and blank lines."""
+        env_file = tmp_path / ".env"
+        env_file.write_text("# comment\n\nKEY=val\n")
+        load_dotenv(env_path=env_file)
+        # Should not crash
+
 
 # ── TestLoadTopologyConfig ──
 
 
 class TestLoadTopologyConfig:
     def test_returns_host_and_port(self):
-        host, port = _load_topology_config()
+        host, port = load_topology_config()
         assert isinstance(host, str)
         assert isinstance(port, int)
-        # Real topology.yaml has 10.99.80.222:22022
         assert port == 22022
         assert len(host) > 0
 
     def test_returns_strings_not_none(self):
-        host, port = _load_topology_config()
+        host, port = load_topology_config()
         assert host is not None
         assert port is not None

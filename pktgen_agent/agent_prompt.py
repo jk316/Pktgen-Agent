@@ -1,40 +1,73 @@
 """
-System prompt for the Pktgen ReAct Agent.
-Used with LangChain's create_react_agent or similar ReAct implementations.
+System prompt for the Pktgen Agent (LangChain V1.0).
 
-Import this in your agent setup:
-    from agent_prompt import SYSTEM_PROMPT
-    agent = create_react_agent(llm, tools, SYSTEM_PROMPT)
+In V1.0, the system prompt is a plain string passed to create_agent().
+Tools are injected natively via the model's tool-calling API — no markdown
+table or text-based ReAct format is needed.
 
-The tool table in SYSTEM_PROMPT is auto-generated from dsl/skills/*.yaml at import time,
-so it always stays in sync with the skill definitions.
+The tool catalogue below is now informational only (for the human reader,
+not for the model's reasoning).  The model sees tools via JSON Schema.
+
+Import-time disk I/O is eliminated: _build_tool_table() is now lazy.
 """
 
-import yaml
+from __future__ import annotations
+
+import logging
 from pathlib import Path
 
+import yaml
 
-def _build_tool_table() -> str:
-    """Generate the tool table from skill YAML files. Always up to date."""
-    skills_dir = Path(__file__).resolve().parent / "dsl" / "skills"
-    rows = []
+logger = logging.getLogger(__name__)
+
+_SKILLS_DIR = Path(__file__).resolve().parent.parent / "dsl" / "skills"
+
+# Cache for lazy-loaded tool summaries
+_tool_table_cache: str | None = None
+
+
+def _build_tool_summaries() -> str:
+    """Build a compact human-readable tool summary (lazy/cached)."""
+    global _tool_table_cache
+    if _tool_table_cache is not None:
+        return _tool_table_cache
+
+    rows: list[str] = []
+    skills_dir = _SKILLS_DIR
+
+    if not skills_dir.exists():
+        logger.warning("Skills directory not found: %s", skills_dir)
+        _tool_table_cache = ""
+        return ""
+
     for skill_file in sorted(skills_dir.glob("*.yaml")):
-        with open(skill_file) as f:
-            data = yaml.safe_load(f)
-        skill = data.get("skill", data)
-        name = skill["name"]
-        desc = skill.get("description", "")
-        params = skill.get("params", [])
-        # Show required params first, then optional
-        required = [p["name"] for p in params if p.get("required")]
-        optional = [p["name"] for p in params if not p.get("required")]
-        param_str = ", ".join(required + optional)
-        rows.append(f"| {name} | {desc} | {param_str} |")
+        try:
+            with open(skill_file) as f:
+                data = yaml.safe_load(f)
+            skill = data.get("skill", data)
+            name = skill.get("name", skill_file.stem)
+            desc = skill.get("description", "")
+            params = skill.get("params", [])
+            param_names = [p["name"] for p in params]
+            param_str = ", ".join(param_names)
+            rows.append(f"| {name} | {desc} | {param_str} |")
+        except (yaml.YAMLError, KeyError) as e:
+            logger.warning("Skipping malformed skill file %s: %s", skill_file, e)
+            continue
+
+    if not rows:
+        _tool_table_cache = ""
+        return ""
+
     header = "| Tool | Purpose | Key Parameters |\n|------|---------|---------------|"
-    return header + "\n" + "\n".join(rows)
+    _tool_table_cache = header + "\n" + "\n".join(rows)
+    return _tool_table_cache
 
 
-SYSTEM_PROMPT = f"""You are a Pktgen Traffic Generator Controller. You control a DPDK-based packet
+# The system prompt — no template placeholders needed.
+# create_agent handles {tools} / {agent_scratchpad} natively.
+
+SYSTEM_PROMPT = r"""You are a Pktgen Traffic Generator Controller. You control a DPDK-based packet
 generator by selecting and executing predefined skills. Each skill compiles to Lua
 code and runs on the Pktgen instance via TCP socket (port 22022).
 
@@ -43,10 +76,6 @@ code and runs on the Pktgen instance via TCP socket (port 22022).
 Translate user requests into skill calls. Do NOT write raw Lua — always use the
 available tools. Each tool automatically validates parameters and compiles the
 correct Lua.
-
-## Available Tools
-
-{_build_tool_table()}
 
 ## Port Topology
 
@@ -108,6 +137,6 @@ After each tool call, report:
 """
 
 
-def get_skill_summaries() -> str:
-    """Generate a compact tool list from skill files (used for dynamic prompt generation)."""
-    return _build_tool_table()
+def get_tool_catalog() -> str:
+    """Return a human-readable tool catalogue (for display/debugging)."""
+    return _build_tool_summaries()

@@ -1,12 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "pktgen-agent"
-version = "0.1.0"
-description = "AI agent controller for Pktgen-DPDK"
+version = "0.2.0"
+description = "AI agent controller for Pktgen-DPDK — LangChain V1.0"
+requires-python = ">=3.10"
+readme = "SKILLS.md"
+dependencies = [
+    "pyyaml>=6.0",
+    "langchain>=1.0",
+    "langchain-openai>=0.3",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "python-dotenv>=1.0",
+]
+langchain-dev = [
+    "langchain-core>=0.3",
+]
+
+[project.scripts]
+pktgen-agent = "pktgen_agent.agent:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "unit: Unit tests (no I/O beyond mocked filesystem)",
+    "integration: Tests requiring a running Pktgen instance (auto-skip if unreachable)",
     "slow: Tests that would hit network if improperly mocked",
     "langchain: Tests requiring langchain-core + pydantic",
 ]
+
+[tool.ruff]
+target-version = "py310"
