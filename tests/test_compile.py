@@ -137,11 +137,11 @@ class TestValidateSetKey:
 class TestResolveTopology:
     def test_resolves_tx_port(self, compiler):
         result = compiler.resolve_topology("$topology.tx_port")
-        assert result == "0"
+        assert result == '"0"'
 
     def test_resolves_rx_port(self, compiler):
         result = compiler.resolve_topology("$topology.rx_port")
-        assert result == "1"
+        assert result == '"1"'
 
     def test_raises_for_undefined(self, compiler):
         with pytest.raises(CompileError, match="Undefined topology"):
@@ -252,7 +252,7 @@ class TestCompileStep:
         step = {"api": "pktgen.start", "args": ["$topology.tx_port"]}
         lines = compiler.compile_step(step, {}, {"params": []})
         assert len(lines) == 1
-        assert "pktgen.start(0)" in "".join(lines)
+        assert 'pktgen.start("0")' in "".join(lines)
 
     def test_no_args_call(self, compiler):
         step = {"api": "pktgen.screen", "args": ["off"]}

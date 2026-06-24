@@ -58,27 +58,27 @@ skill:
       args: [500]
 
     - comment: "Save configuration if requested"
-      condition: "$params.save_config == true"
+      condition: "$params.save_config"
       api: "pktgen.save"
       args: ["$params.config_file"]
 
     - comment: "Clear port statistics"
-      condition: "$params.clear_stats == true"
+      condition: "$params.clear_stats"
       api: "pktgen.clear"
       args: ["$topology.target_port"]
 
     - comment: "Also clear screen-level stats"
-      condition: "$params.clear_stats == true"
+      condition: "$params.clear_stats"
       api: "pktgen.cls"
       args: []
 
     - comment: "Reset port configuration to defaults"
-      condition: "$params.reset_ports == true"
+      condition: "$params.reset_ports"
       api: "pktgen.reset"
       args: ["$topology.target_port"]
 
     - comment: "Return to main page"
-      condition: "$params.return_to_main == true"
+      condition: "$params.return_to_main"
       api: "pktgen.page"
       args: ['"0"']
 

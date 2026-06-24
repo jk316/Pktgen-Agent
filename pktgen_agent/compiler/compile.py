@@ -115,7 +115,12 @@ class SkillCompiler:
             )
 
     def resolve_topology(self, value: str) -> str:
-        """Replace $topology.<name> with physical portlist."""
+        """Replace $topology.<name> with physical portlist.
+
+        The resolved value is wrapped as a Lua literal (e.g. ``all`` → ``"all"``,
+        ``0`` → ``"0"``) so Pktgen APIs that expect string port references
+        (like ``pktgen.stop("all")``) receive valid Lua.
+        """
         pattern = r"\$topology\.(\w+)"
 
         def replacer(match: re.Match) -> str:
@@ -125,7 +130,8 @@ class SkillCompiler:
                     f"Undefined topology reference: '{name}'. "
                     f"Available: {list(self.topology.keys())}"
                 )
-            return self.topology[name]["portlist"]
+            raw = self.topology[name]["portlist"]
+            return self._to_lua_literal(raw)
 
         return re.sub(pattern, replacer, value)
 
