@@ -1,11 +1,4 @@
 __pycache__/
-*.py[cod]
-*.pyo
-.venv/
-venv/
 .env
-*.egg-info/
-dist/
-build/
-.DS_Store
-Thumbs.db
+lua_scripts/
+*.pyc

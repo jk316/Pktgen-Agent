@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -28,6 +29,23 @@ logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _SKILLS_DIR = _PROJECT_ROOT / "dsl" / "skills"
+_LUA_SCRIPTS_DIR = _PROJECT_ROOT / "lua_scripts"
+
+# ── Lua script persistence ──
+
+
+def _save_lua_script(skill_name: str, lua_code: str, mode: str) -> Path:
+    """Save compiled Lua code to lua_scripts/ for debugging.
+
+    Returns the path to the saved file.
+    """
+    _LUA_SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}_{skill_name}.lua"
+    path = _LUA_SCRIPTS_DIR / filename
+    path.write_text(lua_code, encoding="utf-8")
+    logger.info("Lua script saved: %s (%s, %d bytes)", path, mode, len(lua_code))
+    return path
 
 # ── LangChain V1.0 imports ──
 
@@ -70,6 +88,7 @@ def execute_skill_dry_run(
 ) -> dict[str, Any]:
     """Compile skill and return Lua without executing against live Pktgen."""
     lua_code = compiler.compile(skill_name, params)
+    _save_lua_script(skill_name, lua_code, "dry_run")
     logger.debug("Dry-run compiled skill=%s params=%s", skill_name, params)
     return {
         "success": True,
@@ -89,6 +108,7 @@ def execute_skill_live(
 ) -> dict[str, Any]:
     """Compile skill and execute against a running Pktgen instance via TCP."""
     lua_code = compiler.compile(skill_name, params)
+    _save_lua_script(skill_name, lua_code, "live")
     try:
         response = execute_lua(
             lua_code=lua_code, host=host, port=port, timeout=timeout
