@@ -98,6 +98,27 @@ def create_pktgen_agent(
     return agent
 
 
+def _safe_input(prompt: str = "") -> str:
+    """Like input() but handles non-UTF-8 locales safely via stderr prompt and
+    binary stdin read with explicit UTF-8 decode.
+
+    On servers with LC_ALL=C / zh_CN.GBK, Python's input() uses the locale
+    encoding which cannot decode Chinese characters, leading to
+    UnicodeDecodeError.  This bypasses the locale entirely.
+    """
+    if prompt:
+        # Write prompt to stderr so it never mixes with stdout redirects
+        print(prompt, end="", flush=True, file=sys.stderr)
+    try:
+        raw = sys.stdin.buffer.readline()
+        if not raw:
+            raise EOFError
+        return raw.decode("utf-8").rstrip("\n")
+    except UnicodeDecodeError:
+        # If the user's input still isn't valid UTF-8, try replacing bad bytes
+        return raw.decode("utf-8", errors="replace").rstrip("\n")
+
+
 def run_interactive(agent: "Runnable") -> None:
     """Run the interactive REPL loop.
 
@@ -109,7 +130,7 @@ def run_interactive(agent: "Runnable") -> None:
 
     while True:
         try:
-            cmd = input("> ").strip()
+            cmd = _safe_input("> ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nGoodbye.")
             break
